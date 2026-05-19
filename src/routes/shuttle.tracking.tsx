@@ -8,6 +8,7 @@ import { MapView } from "@/components/MapView";
 
 import { useBooking } from "@/store/booking";
 import { KNO_AIRPORT } from "@/lib/mock-data";
+import { useOsrmRoute } from "@/hooks/use-osrm-route";
 
 export const Route = createFileRoute("/shuttle/tracking")({
   head: () => ({ meta: [{ title: "Lacak Shuttle — PYU-GO" }] }),
