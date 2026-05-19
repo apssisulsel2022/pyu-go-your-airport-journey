@@ -144,15 +144,21 @@ function PaymentPage() {
             </div>
             <button
               onClick={applyPromo}
-              className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+              disabled={!promo.trim()}
+              className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-40"
             >
               Pakai
             </button>
           </div>
           {appliedPromo && (
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-success">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Promo {appliedPromo.code} berhasil dipakai (−{formatRupiah(discount)})
+            <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-success/10 px-2.5 py-1.5 text-xs font-semibold text-success">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {appliedPromo.code} aktif (−{formatRupiah(discount)})
+              </span>
+              <button onClick={removePromo} className="text-[11px] font-bold underline">
+                Hapus
+              </button>
             </div>
           )}
           {promoError && (
