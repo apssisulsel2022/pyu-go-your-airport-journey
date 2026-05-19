@@ -1,15 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useAdmin, renumberLayout, layoutToCounts, type VehicleTemplate, type SeatCell } from "@/store/admin";
+import { useAdmin, renumberLayout, layoutToCounts, countSeatsInMap, type VehicleTemplate, type SeatCell, type SeatMarker } from "@/store/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Pencil, Trash2, RotateCw } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Plus, Pencil, Trash2, RotateCw, Image as ImageIcon } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SeatLayoutGrid } from "@/components/admin/SeatLayoutGrid";
+import { SeatImageEditor } from "@/components/admin/SeatImageEditor";
+import { SeatImageMap } from "@/components/admin/SeatImageMap";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
