@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -388,10 +388,9 @@ function EditPlateDialog({
 }) {
   const [plate, setPlate] = useState("");
 
-  // Reset on open
-  if (vehicle && plate === "") {
-    setPlate(vehicle.plate);
-  }
+  useEffect(() => {
+    if (vehicle) setPlate(vehicle.plate);
+  }, [vehicle]);
 
   const valid = /^[A-Z0-9 ]{4,12}$/.test(plate.trim().toUpperCase());
 
