@@ -2,7 +2,7 @@ import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-ro
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { toPng } from "html-to-image";
+
 import { Calendar, Clock, MapPin, User, Bus, Share2, Navigation, Download } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useBooking } from "@/store/booking";
