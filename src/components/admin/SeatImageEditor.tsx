@@ -85,7 +85,9 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
       return;
     }
     if (e.target !== e.currentTarget && (e.target as HTMLElement).dataset.marker) return;
-    const { x, y } = getRel(e);
+    const raw = getRel(e);
+    const x = snapVal(raw.x);
+    const y = snapVal(raw.y);
     const id = "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
     let next = [...markers];
     if (tool === "driver" || tool === "door") {
@@ -118,7 +120,9 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
       const d = dragging.current;
       if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 4) return;
       d.moved = true;
-      const { x, y } = getRel(e);
+      const raw = getRel(e);
+      const x = snapVal(raw.x);
+      const y = snapVal(raw.y);
       onMarkersChange(markers.map((m) => (m.id === d.id ? { ...m, x, y } : m)));
     },
     [markers, onMarkersChange],
