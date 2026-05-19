@@ -56,8 +56,15 @@ function AccountPage() {
         </div>
 
         <Link
+          to="/admin"
+          className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 py-3 text-sm font-semibold text-primary"
+        >
+          <Shield className="h-4 w-4" /> Buka Admin Console
+        </Link>
+
+        <Link
           to="/auth/login"
-          className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 py-3 text-sm font-semibold text-destructive"
+          className="mt-3 flex items-center justify-center gap-2 rounded-2xl border border-destructive/30 bg-destructive/5 py-3 text-sm font-semibold text-destructive"
         >
           <LogOut className="h-4 w-4" /> Keluar
         </Link>
