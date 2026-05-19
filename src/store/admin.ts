@@ -38,14 +38,30 @@ export interface VehicleTemplate {
 export const countSeatsInMap = (markers: SeatMarker[] | undefined) =>
   (markers ?? []).filter((m) => m.kind === "seat").length;
 
-export const renumberSeatMap = (markers: SeatMarker[]): SeatMarker[] => {
+// Row-bucketed renumber: group seats whose Y differ by < ROW_GAP, sort
+// each bucket left-to-right, then number top-to-bottom.
+export const renumberSeatMap = (markers: SeatMarker[], rowGap = 0.06): SeatMarker[] => {
   const seats = markers
     .filter((m) => m.kind === "seat")
     .slice()
-    .sort((a, b) => (a.y - b.y) * 1000 + (a.x - b.x));
+    .sort((a, b) => a.y - b.y);
+  const buckets: SeatMarker[][] = [];
+  for (const s of seats) {
+    const b = buckets[buckets.length - 1];
+    if (b && Math.abs(s.y - b[0].y) < rowGap) b.push(s);
+    else buckets.push([s]);
+  }
   const idx = new Map<string, number>();
-  seats.forEach((m, i) => idx.set(m.id, i + 1));
-  return markers.map((m) => (m.kind === "seat" ? { ...m, label: String(idx.get(m.id)) } : m));
+  let i = 1;
+  for (const b of buckets) {
+    b.sort((a, c) => a.x - c.x).forEach((m) => idx.set(m.id, i++));
+  }
+  return markers.map((m) => {
+    if (m.kind === "seat") return { ...m, label: String(idx.get(m.id)) };
+    // Strip stale labels from non-seat markers.
+    const { label: _label, ...rest } = m;
+    return rest;
+  });
 };
 
 export interface AdminSchedule {
