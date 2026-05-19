@@ -78,6 +78,16 @@ function TrackingPage() {
     return [pickup.lat - 0.018, pickup.lng - 0.014];
   }, [pickup]);
 
+  // Real road route: driver→pickup and pickup→KNO
+  const { data: legToPickup } = useOsrmRoute(
+    driverStart ? { lat: driverStart[0], lng: driverStart[1] } : null,
+    pickup ? { lat: pickup.lat, lng: pickup.lng } : null,
+  );
+  const { data: legToAirport } = useOsrmRoute(
+    pickup ? { lat: pickup.lat, lng: pickup.lng } : null,
+    { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng },
+  );
+
   // rAF loop for smooth progress
   useEffect(() => {
     let raf = 0;
