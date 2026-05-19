@@ -9,6 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RideRouteImport } from './routes/ride'
+import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShuttleTrackingRouteImport } from './routes/shuttle.tracking'
 import { Route as ShuttleTicketRouteImport } from './routes/shuttle.ticket'
@@ -16,7 +19,23 @@ import { Route as ShuttleSeatsRouteImport } from './routes/shuttle.seats'
 import { Route as ShuttleScheduleRouteImport } from './routes/shuttle.schedule'
 import { Route as ShuttlePickupRouteImport } from './routes/shuttle.pickup'
 import { Route as ShuttlePaymentRouteImport } from './routes/shuttle.payment'
+import { Route as RideTrackingRouteImport } from './routes/ride.tracking'
 
+const RideRoute = RideRouteImport.update({
+  id: '/ride',
+  path: '/ride',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingsRoute = BookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,9 +71,18 @@ const ShuttlePaymentRoute = ShuttlePaymentRouteImport.update({
   path: '/shuttle/payment',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RideTrackingRoute = RideTrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
+  getParentRoute: () => RideRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/ride': typeof RideRouteWithChildren
+  '/ride/tracking': typeof RideTrackingRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
@@ -64,6 +92,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/ride': typeof RideRouteWithChildren
+  '/ride/tracking': typeof RideTrackingRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
@@ -74,6 +106,10 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/ride': typeof RideRouteWithChildren
+  '/ride/tracking': typeof RideTrackingRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
@@ -85,6 +121,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
+    | '/bookings'
+    | '/ride'
+    | '/ride/tracking'
     | '/shuttle/payment'
     | '/shuttle/pickup'
     | '/shuttle/schedule'
@@ -94,6 +134,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
+    | '/bookings'
+    | '/ride'
+    | '/ride/tracking'
     | '/shuttle/payment'
     | '/shuttle/pickup'
     | '/shuttle/schedule'
@@ -103,6 +147,10 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account'
+    | '/bookings'
+    | '/ride'
+    | '/ride/tracking'
     | '/shuttle/payment'
     | '/shuttle/pickup'
     | '/shuttle/schedule'
@@ -113,6 +161,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
+  BookingsRoute: typeof BookingsRoute
+  RideRoute: typeof RideRouteWithChildren
   ShuttlePaymentRoute: typeof ShuttlePaymentRoute
   ShuttlePickupRoute: typeof ShuttlePickupRoute
   ShuttleScheduleRoute: typeof ShuttleScheduleRoute
@@ -123,6 +174,27 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ride': {
+      id: '/ride'
+      path: '/ride'
+      fullPath: '/ride'
+      preLoaderRoute: typeof RideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookings': {
+      id: '/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof BookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -172,11 +244,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShuttlePaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ride/tracking': {
+      id: '/ride/tracking'
+      path: '/tracking'
+      fullPath: '/ride/tracking'
+      preLoaderRoute: typeof RideTrackingRouteImport
+      parentRoute: typeof RideRoute
+    }
   }
 }
 
+interface RideRouteChildren {
+  RideTrackingRoute: typeof RideTrackingRoute
+}
+
+const RideRouteChildren: RideRouteChildren = {
+  RideTrackingRoute: RideTrackingRoute,
+}
+
+const RideRouteWithChildren = RideRoute._addFileChildren(RideRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
+  BookingsRoute: BookingsRoute,
+  RideRoute: RideRouteWithChildren,
   ShuttlePaymentRoute: ShuttlePaymentRoute,
   ShuttlePickupRoute: ShuttlePickupRoute,
   ShuttleScheduleRoute: ShuttleScheduleRoute,
