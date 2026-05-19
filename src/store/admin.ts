@@ -20,6 +20,7 @@ export interface SeatMarker {
   y: number; // 0..1 relative to image height
   kind: "seat" | "driver" | "door";
   label?: string;
+  rotation?: 0 | 90 | 180 | 270;
 }
 
 export interface VehicleTemplate {

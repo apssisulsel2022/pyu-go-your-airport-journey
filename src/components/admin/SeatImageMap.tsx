@@ -1,6 +1,7 @@
 import type { SeatMarker } from "@/store/admin";
 import { cn } from "@/lib/utils";
 import { Car, DoorOpen } from "lucide-react";
+import { SeatGlyph } from "./SeatGlyph";
 
 interface Props {
   imageUrl: string;
@@ -21,6 +22,7 @@ export function SeatImageMap({ imageUrl, markers, selected = [], booked = [], on
               key={m.id}
               className="absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-foreground text-background shadow-md"
               style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
+              aria-label="Sopir"
             >
               <Car className="h-3.5 w-3.5" />
             </div>
@@ -30,16 +32,18 @@ export function SeatImageMap({ imageUrl, markers, selected = [], booked = [], on
           return (
             <div
               key={m.id}
-              className="absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow-md"
+              className="absolute flex h-7 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-amber-400 text-amber-950 shadow-md"
               style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
+              aria-label="Pintu"
             >
-              <DoorOpen className="h-3.5 w-3.5" />
+              <DoorOpen className="h-3 w-3" />
             </div>
           );
         }
         const label = m.label ?? "?";
         const isBooked = booked.includes(label);
         const isSelected = selected.includes(label);
+        const state = isBooked ? "booked" : isSelected ? "selected" : "available";
         return (
           <button
             key={m.id}
@@ -49,14 +53,14 @@ export function SeatImageMap({ imageUrl, markers, selected = [], booked = [], on
             aria-label={`Kursi ${label}${isBooked ? " (terisi)" : ""}`}
             onClick={() => onToggle?.(label)}
             className={cn(
-              "absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-xs font-bold shadow-md transition",
-              isBooked && "cursor-not-allowed bg-muted text-muted-foreground border-muted",
-              !isBooked && isSelected && "bg-primary text-primary-foreground border-primary scale-110",
-              !isBooked && !isSelected && "bg-background text-foreground border-primary/60 hover:bg-primary/10",
+              "absolute -translate-x-1/2 -translate-y-1/2 transition-transform rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              isBooked && "cursor-not-allowed",
+              isSelected && "scale-110",
+              !isBooked && !isSelected && "hover:scale-105",
             )}
             style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
           >
-            {label}
+            <SeatGlyph label={label} state={state} rotation={m.rotation ?? 0} size={34} />
           </button>
         );
       })}
