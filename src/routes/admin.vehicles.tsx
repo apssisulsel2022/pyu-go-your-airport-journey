@@ -57,7 +57,7 @@ function VehiclesPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="rounded-xl bg-muted/40 p-2">
-                {v.imageUrl && v.seatMap?.length ? (
+                {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? (
                   <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} />
                 ) : (
                   <SeatLayoutGrid layout={v.layout} />
@@ -65,8 +65,8 @@ function VehiclesPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
-                  {v.imageUrl && v.seatMap?.length ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
-                  {v.imageUrl ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
+                  {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
+                  {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
                 </span>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setEditing(v)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
