@@ -9,38 +9,231 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RideRouteImport } from './routes/ride'
+import { Route as BookingsRouteImport } from './routes/bookings'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShuttleTrackingRouteImport } from './routes/shuttle.tracking'
+import { Route as ShuttleTicketRouteImport } from './routes/shuttle.ticket'
+import { Route as ShuttleSeatsRouteImport } from './routes/shuttle.seats'
+import { Route as ShuttleScheduleRouteImport } from './routes/shuttle.schedule'
+import { Route as ShuttlePickupRouteImport } from './routes/shuttle.pickup'
+import { Route as ShuttlePaymentRouteImport } from './routes/shuttle.payment'
+import { Route as RideTrackingRouteImport } from './routes/ride.tracking'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthOtpRouteImport } from './routes/auth.otp'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
 
+const RideRoute = RideRouteImport.update({
+  id: '/ride',
+  path: '/ride',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingsRoute = BookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShuttleTrackingRoute = ShuttleTrackingRouteImport.update({
+  id: '/shuttle/tracking',
+  path: '/shuttle/tracking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleTicketRoute = ShuttleTicketRouteImport.update({
+  id: '/shuttle/ticket',
+  path: '/shuttle/ticket',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleSeatsRoute = ShuttleSeatsRouteImport.update({
+  id: '/shuttle/seats',
+  path: '/shuttle/seats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleScheduleRoute = ShuttleScheduleRouteImport.update({
+  id: '/shuttle/schedule',
+  path: '/shuttle/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttlePickupRoute = ShuttlePickupRouteImport.update({
+  id: '/shuttle/pickup',
+  path: '/shuttle/pickup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttlePaymentRoute = ShuttlePaymentRouteImport.update({
+  id: '/shuttle/payment',
+  path: '/shuttle/payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RideTrackingRoute = RideTrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
+  getParentRoute: () => RideRoute,
+} as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/auth/register',
+  path: '/auth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthOtpRoute = AuthOtpRouteImport.update({
+  id: '/auth/otp',
+  path: '/auth/otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/ride': typeof RideRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/otp': typeof AuthOtpRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/ride/tracking': typeof RideTrackingRoute
+  '/shuttle/payment': typeof ShuttlePaymentRoute
+  '/shuttle/pickup': typeof ShuttlePickupRoute
+  '/shuttle/schedule': typeof ShuttleScheduleRoute
+  '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/ticket': typeof ShuttleTicketRoute
+  '/shuttle/tracking': typeof ShuttleTrackingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/ride': typeof RideRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/otp': typeof AuthOtpRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/ride/tracking': typeof RideTrackingRoute
+  '/shuttle/payment': typeof ShuttlePaymentRoute
+  '/shuttle/pickup': typeof ShuttlePickupRoute
+  '/shuttle/schedule': typeof ShuttleScheduleRoute
+  '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/ticket': typeof ShuttleTicketRoute
+  '/shuttle/tracking': typeof ShuttleTrackingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
+  '/bookings': typeof BookingsRoute
+  '/ride': typeof RideRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/otp': typeof AuthOtpRoute
+  '/auth/register': typeof AuthRegisterRoute
+  '/ride/tracking': typeof RideTrackingRoute
+  '/shuttle/payment': typeof ShuttlePaymentRoute
+  '/shuttle/pickup': typeof ShuttlePickupRoute
+  '/shuttle/schedule': typeof ShuttleScheduleRoute
+  '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/ticket': typeof ShuttleTicketRoute
+  '/shuttle/tracking': typeof ShuttleTrackingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/account'
+    | '/bookings'
+    | '/ride'
+    | '/auth/login'
+    | '/auth/otp'
+    | '/auth/register'
+    | '/ride/tracking'
+    | '/shuttle/payment'
+    | '/shuttle/pickup'
+    | '/shuttle/schedule'
+    | '/shuttle/seats'
+    | '/shuttle/ticket'
+    | '/shuttle/tracking'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/account'
+    | '/bookings'
+    | '/ride'
+    | '/auth/login'
+    | '/auth/otp'
+    | '/auth/register'
+    | '/ride/tracking'
+    | '/shuttle/payment'
+    | '/shuttle/pickup'
+    | '/shuttle/schedule'
+    | '/shuttle/seats'
+    | '/shuttle/ticket'
+    | '/shuttle/tracking'
+  id:
+    | '__root__'
+    | '/'
+    | '/account'
+    | '/bookings'
+    | '/ride'
+    | '/auth/login'
+    | '/auth/otp'
+    | '/auth/register'
+    | '/ride/tracking'
+    | '/shuttle/payment'
+    | '/shuttle/pickup'
+    | '/shuttle/schedule'
+    | '/shuttle/seats'
+    | '/shuttle/ticket'
+    | '/shuttle/tracking'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
+  BookingsRoute: typeof BookingsRoute
+  RideRoute: typeof RideRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthOtpRoute: typeof AuthOtpRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+  ShuttlePaymentRoute: typeof ShuttlePaymentRoute
+  ShuttlePickupRoute: typeof ShuttlePickupRoute
+  ShuttleScheduleRoute: typeof ShuttleScheduleRoute
+  ShuttleSeatsRoute: typeof ShuttleSeatsRoute
+  ShuttleTicketRoute: typeof ShuttleTicketRoute
+  ShuttleTrackingRoute: typeof ShuttleTrackingRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/ride': {
+      id: '/ride'
+      path: '/ride'
+      fullPath: '/ride'
+      preLoaderRoute: typeof RideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookings': {
+      id: '/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof BookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +241,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shuttle/tracking': {
+      id: '/shuttle/tracking'
+      path: '/shuttle/tracking'
+      fullPath: '/shuttle/tracking'
+      preLoaderRoute: typeof ShuttleTrackingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/ticket': {
+      id: '/shuttle/ticket'
+      path: '/shuttle/ticket'
+      fullPath: '/shuttle/ticket'
+      preLoaderRoute: typeof ShuttleTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/seats': {
+      id: '/shuttle/seats'
+      path: '/shuttle/seats'
+      fullPath: '/shuttle/seats'
+      preLoaderRoute: typeof ShuttleSeatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/schedule': {
+      id: '/shuttle/schedule'
+      path: '/shuttle/schedule'
+      fullPath: '/shuttle/schedule'
+      preLoaderRoute: typeof ShuttleScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/pickup': {
+      id: '/shuttle/pickup'
+      path: '/shuttle/pickup'
+      fullPath: '/shuttle/pickup'
+      preLoaderRoute: typeof ShuttlePickupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/payment': {
+      id: '/shuttle/payment'
+      path: '/shuttle/payment'
+      fullPath: '/shuttle/payment'
+      preLoaderRoute: typeof ShuttlePaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ride/tracking': {
+      id: '/ride/tracking'
+      path: '/tracking'
+      fullPath: '/ride/tracking'
+      preLoaderRoute: typeof RideTrackingRouteImport
+      parentRoute: typeof RideRoute
+    }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/auth/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/otp': {
+      id: '/auth/otp'
+      path: '/auth/otp'
+      fullPath: '/auth/otp'
+      preLoaderRoute: typeof AuthOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface RideRouteChildren {
+  RideTrackingRoute: typeof RideTrackingRoute
+}
+
+const RideRouteChildren: RideRouteChildren = {
+  RideTrackingRoute: RideTrackingRoute,
+}
+
+const RideRouteWithChildren = RideRoute._addFileChildren(RideRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
+  BookingsRoute: BookingsRoute,
+  RideRoute: RideRouteWithChildren,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthOtpRoute: AuthOtpRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+  ShuttlePaymentRoute: ShuttlePaymentRoute,
+  ShuttlePickupRoute: ShuttlePickupRoute,
+  ShuttleScheduleRoute: ShuttleScheduleRoute,
+  ShuttleSeatsRoute: ShuttleSeatsRoute,
+  ShuttleTicketRoute: ShuttleTicketRoute,
+  ShuttleTrackingRoute: ShuttleTrackingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
