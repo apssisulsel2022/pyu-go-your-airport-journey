@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Search, Clock, Navigation, Ruler, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { BookingStepper } from "@/components/BookingStepper";
-import { PickupMiniMap } from "@/components/PickupMiniMap";
 import { MapView } from "@/components/MapView";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
 
