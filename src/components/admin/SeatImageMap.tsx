@@ -45,6 +45,8 @@ export function SeatImageMap({ imageUrl, markers, selected = [], booked = [], on
             key={m.id}
             type="button"
             disabled={isBooked || !onToggle}
+            aria-pressed={isSelected}
+            aria-label={`Kursi ${label}${isBooked ? " (terisi)" : ""}`}
             onClick={() => onToggle?.(label)}
             className={cn(
               "absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 text-xs font-bold shadow-md transition",

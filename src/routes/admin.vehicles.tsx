@@ -57,7 +57,7 @@ function VehiclesPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="rounded-xl bg-muted/40 p-2">
-                {v.imageUrl && v.seatMap?.length ? (
+                {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? (
                   <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} />
                 ) : (
                   <SeatLayoutGrid layout={v.layout} />
@@ -65,8 +65,8 @@ function VehiclesPage() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
-                  {v.imageUrl && v.seatMap?.length ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
-                  {v.imageUrl ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
+                  {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
+                  {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
                 </span>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setEditing(v)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
@@ -176,6 +176,11 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
               />
             </TabsContent>
             <TabsContent value="grid" className="mt-3">
+              {v.imageUrl && v.seatMap && v.seatMap.length > 0 && (
+                <div className="mb-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Denah gambar aktif untuk kendaraan ini — grid hanya dipakai sebagai fallback.
+                </div>
+              )}
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-sm font-semibold">Grid layout</div>
                 <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
@@ -196,7 +201,8 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
               onSave({
                 ...v,
                 layout: renumberLayout(v.layout),
-                seatMap: v.seatMap ? v.seatMap : undefined,
+                seatMap: v.seatMap && v.seatMap.length > 0 ? v.seatMap : undefined,
+                imageUrl: v.seatMap && v.seatMap.length > 0 ? v.imageUrl : v.imageUrl,
               })
             }
           >
