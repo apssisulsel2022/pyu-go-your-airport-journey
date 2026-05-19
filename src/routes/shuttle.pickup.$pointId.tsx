@@ -15,6 +15,7 @@ import { MapView } from "@/components/MapView";
 import { BookingStepper } from "@/components/BookingStepper";
 import { KNO_AIRPORT, pickupPoints } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
+import { useOsrmRoute } from "@/hooks/use-osrm-route";
 
 export const Route = createFileRoute("/shuttle/pickup/$pointId")({
   head: () => ({ meta: [{ title: "Rute ke KNO — PYU-GO" }] }),
