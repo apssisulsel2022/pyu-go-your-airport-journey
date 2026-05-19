@@ -13,17 +13,21 @@ This is a large product. I'll deliver it in **3 phases** so each phase is shippa
 The visible product end-users will experience. Built with mock data so the entire flow is clickable without a backend.
 
 **Design system**
+
 - Traveloka-inspired tokens in `src/styles.css` (blue primary, soft shadows, xl/2xl radii, gradient hero)
 - Framer Motion page/element transitions, skeleton loaders
 - Sticky mobile bottom nav + floating CTAs
 
 **Auth UI** (visual only in Phase 1)
+
 - Login, Register, Social login buttons, OTP verification screen
 
 **Home**
+
 - Hero search, Shuttle/Ride toggle cards, promo carousel, popular routes, nearby pickup points, upcoming schedules
 
 **Shuttle booking flow**
+
 1. Pickup point picker (cards w/ address, distance, ETA, mini map)
 2. Destination (KNO Airport, fixed)
 3. Date picker
@@ -34,6 +38,7 @@ The visible product end-users will experience. Built with mock data so the entir
 8. **Live tracking**: OpenStreetMap (Leaflet) with animated shuttle marker, ETA, driver/vehicle info, countdown
 
 **Ride hailing flow**
+
 - Pickup + destination input, fare estimate, nearby drivers map, driver matching animation, ride status tracking
 
 ---
@@ -45,6 +50,7 @@ Wire the UI to a real backend.
 **Enable Lovable Cloud** for Postgres + Auth + Realtime + RLS.
 
 **Schema**
+
 ```text
 users (auth.users + profiles)
 user_roles (admin | driver | customer)  -- separate table, enum, has_role()
@@ -71,9 +77,11 @@ driver_locations (driver_id, lat, lng, updated_at)  -- realtime
 ## Phase 3 — Driver App + Admin Panel
 
 **Driver app** (`/driver/*`, role-gated)
+
 - Today's trips, passenger manifest with QR scan check-in, start/finish trip, location broadcast toggle, ride-hailing incoming requests
 
 **Admin panel** (`/admin/*`, role-gated)
+
 - KPI cards, revenue chart (Recharts), active bookings table
 - CRUD: fleet, drivers, routes, pickup points, schedules
 - Seat occupancy analytics, ride heatmap
@@ -91,8 +99,8 @@ driver_locations (driver_id, lat, lng, updated_at)  -- realtime
 ## What I need from you before starting Phase 1
 
 1. **Brand color** — keep Traveloka-style blue (`#0770E3`-ish), or pick your own?
-2. **Logo** — do you have one, or should I generate a "PYU - GO" wordmark?
+2. **Logo** — do you have one, or should I generate a "PYU - GO" wordmark? i have logo
 3. **Initial pickup points** — use your three examples (Hermes Palace / Cambridge / Hotel TD Pardede) as seed data, plus ~5 more I'll invent?
-4. **Phase 1 sign-off model** — proceed straight through Phase 1 → 2 → 3, or pause for review after each phase? (Recommended: pause.)
+4. **Phase 1 sign-off model** — proceed straight through Phase 1 → 2 → 3, or pause for review after each phase? ( pause.)
 
 After your answers I'll start Phase 1.
