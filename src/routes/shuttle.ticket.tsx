@@ -16,13 +16,33 @@ export const Route = createFileRoute("/shuttle/ticket")({
 
 function TicketPage() {
   const { pickup, schedule, selectedSeats, bookingCode, date } = useBooking();
+  const ticketRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
   if (!pickup || !schedule || !bookingCode) return <Navigate to="/" />;
+
+  const handleDownload = async () => {
+    if (!ticketRef.current) return;
+    try {
+      setDownloading(true);
+      const dataUrl = await toPng(ticketRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: "#ffffff" });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `eticket-${bookingCode}.png`;
+      a.click();
+      toast.success("E-Ticket berhasil diunduh");
+    } catch {
+      toast.error("Gagal mengunduh tiket");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-hero-gradient pb-10">
       <PageHeader title="E-Ticket" />
 
       <motion.div
+        ref={ticketRef}
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="mx-4 mt-4 overflow-hidden rounded-3xl bg-card shadow-float"
