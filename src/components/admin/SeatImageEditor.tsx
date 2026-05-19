@@ -270,8 +270,24 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
           </div>
         )}
 
+          <div className="flex items-center gap-1 rounded-md border border-input p-1">
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
+                snap ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent",
+              )}
+              onClick={() => setSnap((s) => !s)}
+              aria-pressed={snap}
+            >
+              <Magnet className="h-3.5 w-3.5" /> Snap
+            </button>
+          </div>
+        )}
+
         <div className="ml-auto text-xs text-muted-foreground">{countSeatsInMap(markers)} kursi</div>
       </div>
+
 
       {/* Stage */}
       {!imageUrl ? (
