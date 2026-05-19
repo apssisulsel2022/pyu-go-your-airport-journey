@@ -1,6 +1,7 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/PageHeader";
+import { BookingStepper } from "@/components/BookingStepper";
 import { SeatPicker } from "@/components/SeatPicker";
 import { SeatImageMap } from "@/components/admin/SeatImageMap";
 import { useBooking } from "@/store/booking";
@@ -46,8 +47,9 @@ function SeatsPage() {
         title="Pilih Kursi"
         subtitle={`${schedule.vehicleName} • ${schedule.departureTime}`}
       />
+      <BookingStepper />
 
-      <div className="p-5">
+      <div className="mx-auto max-w-md p-5">
         {useImageMap ? (
           <div className="mx-auto w-full max-w-md">
             <div className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
@@ -108,10 +110,10 @@ function SeatsPage() {
           </div>
           <button
             disabled={selectedSeats.length === 0}
-            onClick={() => nav({ to: "/shuttle/payment" })}
+            onClick={() => nav({ to: "/shuttle/passenger" })}
             className="flex-1 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground shadow-card transition disabled:opacity-40"
           >
-            Lanjut ke Pembayaran
+            Lanjut ke Penumpang
           </button>
         </div>
       </motion.div>

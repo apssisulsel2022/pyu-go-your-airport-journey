@@ -22,6 +22,7 @@ import { Route as ShuttleSeatsRouteImport } from './routes/shuttle.seats'
 import { Route as ShuttleScheduleRouteImport } from './routes/shuttle.schedule'
 import { Route as ShuttlePickupRouteImport } from './routes/shuttle.pickup'
 import { Route as ShuttlePaymentRouteImport } from './routes/shuttle.payment'
+import { Route as ShuttlePassengerRouteImport } from './routes/shuttle.passenger'
 import { Route as RideTrackingRouteImport } from './routes/ride.tracking'
 import { Route as AuthRegisterRouteImport } from './routes/auth.register'
 import { Route as AuthOtpRouteImport } from './routes/auth.otp'
@@ -96,6 +97,11 @@ const ShuttlePaymentRoute = ShuttlePaymentRouteImport.update({
   path: '/shuttle/payment',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShuttlePassengerRoute = ShuttlePassengerRouteImport.update({
+  id: '/shuttle/passenger',
+  path: '/shuttle/passenger',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RideTrackingRoute = RideTrackingRouteImport.update({
   id: '/tracking',
   path: '/tracking',
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/auth/otp': typeof AuthOtpRoute
   '/auth/register': typeof AuthRegisterRoute
   '/ride/tracking': typeof RideTrackingRoute
+  '/shuttle/passenger': typeof ShuttlePassengerRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
@@ -173,6 +180,7 @@ export interface FileRoutesByTo {
   '/auth/otp': typeof AuthOtpRoute
   '/auth/register': typeof AuthRegisterRoute
   '/ride/tracking': typeof RideTrackingRoute
+  '/shuttle/passenger': typeof ShuttlePassengerRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/auth/otp': typeof AuthOtpRoute
   '/auth/register': typeof AuthRegisterRoute
   '/ride/tracking': typeof RideTrackingRoute
+  '/shuttle/passenger': typeof ShuttlePassengerRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/auth/otp'
     | '/auth/register'
     | '/ride/tracking'
+    | '/shuttle/passenger'
     | '/shuttle/payment'
     | '/shuttle/pickup'
     | '/shuttle/schedule'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/auth/otp'
     | '/auth/register'
     | '/ride/tracking'
+    | '/shuttle/passenger'
     | '/shuttle/payment'
     | '/shuttle/pickup'
     | '/shuttle/schedule'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/auth/otp'
     | '/auth/register'
     | '/ride/tracking'
+    | '/shuttle/passenger'
     | '/shuttle/payment'
     | '/shuttle/pickup'
     | '/shuttle/schedule'
@@ -286,6 +298,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthOtpRoute: typeof AuthOtpRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
+  ShuttlePassengerRoute: typeof ShuttlePassengerRoute
   ShuttlePaymentRoute: typeof ShuttlePaymentRoute
   ShuttlePickupRoute: typeof ShuttlePickupRoute
   ShuttleScheduleRoute: typeof ShuttleScheduleRoute
@@ -388,6 +401,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShuttlePaymentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shuttle/passenger': {
+      id: '/shuttle/passenger'
+      path: '/shuttle/passenger'
+      fullPath: '/shuttle/passenger'
+      preLoaderRoute: typeof ShuttlePassengerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ride/tracking': {
       id: '/ride/tracking'
       path: '/tracking'
@@ -484,6 +504,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthOtpRoute: AuthOtpRoute,
   AuthRegisterRoute: AuthRegisterRoute,
+  ShuttlePassengerRoute: ShuttlePassengerRoute,
   ShuttlePaymentRoute: ShuttlePaymentRoute,
   ShuttlePickupRoute: ShuttlePickupRoute,
   ShuttleScheduleRoute: ShuttleScheduleRoute,
