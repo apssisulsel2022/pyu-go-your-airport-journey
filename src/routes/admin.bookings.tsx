@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { SeatLayoutGrid } from "@/components/admin/SeatLayoutGrid";
+import { SeatImageMap } from "@/components/admin/SeatImageMap";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
@@ -158,10 +158,10 @@ function BookingsPage() {
                     <Row k="Total" v={formatRupiah(selected.amount)} />
                     <Row k="Dibuat" v={new Date(selected.createdAt).toLocaleString("id-ID")} />
                   </Section>
-                  {v && (
+                  {v && v.imageUrl && v.seatMap && v.seatMap.length > 0 && (
                     <div>
                       <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Layout Kursi</div>
-                      <SeatLayoutGrid layout={v.layout} />
+                      <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} booked={selected.seats} />
                     </div>
                   )}
                   <Separator />

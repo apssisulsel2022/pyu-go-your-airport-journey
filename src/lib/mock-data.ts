@@ -1,5 +1,6 @@
 // Mock data for PYU-GO — Phase 1 (no backend yet)
-export type VehicleType = "hiace" | "elf" | "minibus";
+export type VehicleType = "minicar" | "suv" | "hiace";
+export type VehicleTier = "Reguler" | "SemiExecutive" | "Executive";
 
 export interface PickupPoint {
   id: string;
@@ -20,7 +21,7 @@ export interface Schedule {
   arrivalTime: string;
   vehicleType: VehicleType;
   vehicleName: string;
-  className: "Economy" | "Business" | "VIP";
+  className: VehicleTier;
   price: number;
   seatsTotal: number;
   seatsBooked: string[]; // seat numbers booked
@@ -52,12 +53,12 @@ const seatPool = (total: number, bookedCount: number) => {
 };
 
 const baseSchedules = (pickupId: string): Schedule[] => [
-  { id: `${pickupId}-s1`, pickupId, departureTime: "05:00", arrivalTime: "06:30", vehicleType: "hiace", vehicleName: "Toyota Hiace Premio", className: "Business", price: 150000, seatsTotal: 12, seatsBooked: seatPool(12, 4), plate: "BK 1234 GO" },
-  { id: `${pickupId}-s2`, pickupId, departureTime: "08:00", arrivalTime: "09:30", vehicleType: "elf", vehicleName: "Isuzu Elf Long", className: "Economy", price: 120000, seatsTotal: 16, seatsBooked: seatPool(16, 9), plate: "BK 4567 GO" },
-  { id: `${pickupId}-s3`, pickupId, departureTime: "11:30", arrivalTime: "13:00", vehicleType: "hiace", vehicleName: "Toyota Hiace Commuter", className: "Business", price: 145000, seatsTotal: 12, seatsBooked: seatPool(12, 2), plate: "BK 7890 GO" },
-  { id: `${pickupId}-s4`, pickupId, departureTime: "14:30", arrivalTime: "16:00", vehicleType: "minibus", vehicleName: "Mitsubishi Minibus", className: "VIP", price: 200000, seatsTotal: 20, seatsBooked: seatPool(20, 6), plate: "BK 2345 GO" },
-  { id: `${pickupId}-s5`, pickupId, departureTime: "17:00", arrivalTime: "18:30", vehicleType: "hiace", vehicleName: "Toyota Hiace Premio", className: "Business", price: 150000, seatsTotal: 12, seatsBooked: seatPool(12, 7), plate: "BK 6789 GO" },
-  { id: `${pickupId}-s6`, pickupId, departureTime: "20:00", arrivalTime: "21:30", vehicleType: "elf", vehicleName: "Isuzu Elf Long", className: "Economy", price: 120000, seatsTotal: 16, seatsBooked: seatPool(16, 3), plate: "BK 1357 GO" },
+  { id: `${pickupId}-s1`, pickupId, departureTime: "05:00", arrivalTime: "06:30", vehicleType: "hiace", vehicleName: "Toyota Hiace Executive", className: "Executive", price: 180000, seatsTotal: 12, seatsBooked: seatPool(12, 4), plate: "BK 1234 GO" },
+  { id: `${pickupId}-s2`, pickupId, departureTime: "08:00", arrivalTime: "09:30", vehicleType: "suv", vehicleName: "Toyota Innova Reborn", className: "SemiExecutive", price: 140000, seatsTotal: 7, seatsBooked: seatPool(7, 3), plate: "BK 4567 GO" },
+  { id: `${pickupId}-s3`, pickupId, departureTime: "11:30", arrivalTime: "13:00", vehicleType: "hiace", vehicleName: "Toyota Hiace Commuter", className: "Reguler", price: 130000, seatsTotal: 12, seatsBooked: seatPool(12, 2), plate: "BK 7890 GO" },
+  { id: `${pickupId}-s4`, pickupId, departureTime: "14:30", arrivalTime: "16:00", vehicleType: "minicar", vehicleName: "Toyota Avanza", className: "Reguler", price: 110000, seatsTotal: 6, seatsBooked: seatPool(6, 2), plate: "BK 2345 GO" },
+  { id: `${pickupId}-s5`, pickupId, departureTime: "17:00", arrivalTime: "18:30", vehicleType: "hiace", vehicleName: "Toyota Hiace Premio", className: "SemiExecutive", price: 160000, seatsTotal: 12, seatsBooked: seatPool(12, 7), plate: "BK 6789 GO" },
+  { id: `${pickupId}-s6`, pickupId, departureTime: "20:00", arrivalTime: "21:30", vehicleType: "suv", vehicleName: "Mitsubishi Xpander", className: "Executive", price: 170000, seatsTotal: 7, seatsBooked: seatPool(7, 2), plate: "BK 1357 GO" },
 ];
 
 export const getSchedulesForPickup = (pickupId: string) => baseSchedules(pickupId);
