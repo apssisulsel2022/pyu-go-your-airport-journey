@@ -1,39 +1,36 @@
-# Polyline mengikuti jalan + jarak hasil routing
+# Routing polyline via OSRM publik
 
-Saat ini peta menggambar polyline lurus (straight line) antara titik jemput dan KNO, dan `distanceKm` di-hardcode di mock data. Kita akan ganti dengan hasil Google Routes API agar polyline mengikuti jalan dan jarak/ETA akurat.
+Pakai server publik OSRM (`https://router.project-osrm.org`) untuk menghitung rute jalan, jarak, dan durasi. Tidak butuh API key.
 
-## Yang akan dilakukan
+## Yang akan dibangun
 
-1. **Aktifkan konektor Google Maps Platform** (Lovable connector — tanpa setup manual). Dipakai server-side via gateway, jadi API key tetap aman.
+1. **Helper `fetchOsrmRoute`** (`src/lib/osrm.ts`)
+   - Endpoint: `GET /route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=full&geometries=geojson`
+   - Return: `{ path: [lat,lng][], distanceKm, durationMin }` atau `null` saat error.
+   - Dipanggil dari browser (CORS OSRM mengizinkan). Tidak perlu server function.
 
-2. **Server function `getDrivingRoute`** (`src/lib/routing.functions.ts`):
-   - Input: `{ origin: {lat,lng}, destination: {lat,lng} }`
-   - Memanggil `routes/directions/v2:computeRoutes` lewat gateway dengan `travelMode: DRIVE`, field mask `routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline`.
-   - Output: `{ distanceMeters, durationSec, encodedPolyline }`.
+2. **Hook `useOsrmRoute(origin, destination)`** (`src/hooks/use-osrm-route.ts`)
+   - Pakai `@tanstack/react-query` yang sudah ada.
+   - `queryKey` berdasarkan koordinat dibulatkan 5 desimal supaya cache stabil.
+   - `staleTime: Infinity` (rute jalan tidak berubah cepat).
+   - Return `{ data, isLoading }`.
 
-3. **Helper decode polyline** (`src/lib/polyline.ts`): decoder standar Google encoded polyline → `[lat,lng][]`. Tanpa dependency baru.
+3. **Integrasi UI shuttle**
+   - `shuttle.pickup.tsx`: saat ada titik terpilih → fetch rute → kirim `route={data.path}` ke `MapView`. Bottom sheet menampilkan `data.distanceKm` & ETA dari OSRM (fallback ke mock saat loading/null).
+   - `shuttle.pickup.$pointId.tsx`: ganti polyline lurus dengan path OSRM. Update metric "Jarak titik" & "Estimasi ke KNO" pakai hasil routing.
+   - `shuttle.tracking.tsx`: rute armada → tujuan ikut jalan dari OSRM.
+   - List kartu di pickup tetap pakai `distanceKm` mock (hemat request, OK untuk daftar).
 
-4. **Hook `useDrivingRoute(origin, destination)`** (`src/hooks/use-driving-route.ts`):
-   - Pakai `@tanstack/react-query` (sudah ada di project) + `useServerFn`.
-   - Cache key: koordinat dibulatkan 5 desimal supaya stabil.
-   - Return `{ path, distanceKm, durationMin, isLoading }`.
+4. **Loading/fallback**: kalau OSRM belum balas atau gagal, gunakan garis lurus + jarak mock yang sudah ada, sehingga UI tidak pernah kosong.
 
-5. **Konsumsi di UI shuttle**:
-   - `shuttle.pickup.tsx` (map overview): saat ada titik terpilih, fetch rute → kirim `route={path}` ke `MapView`. Tampilkan `distanceKm` & ETA hasil routing di bottom sheet (fallback ke mock saat loading).
-   - `shuttle.pickup.$pointId.tsx`: ganti polyline lurus dengan path hasil routing, tampilkan jarak & estimasi tempuh dari API. Pertahankan layout/metric yang ada.
-   - `shuttle.tracking.tsx`: rute armada → KNO juga ikut jalan (sama hook).
-   - `PickupMiniMap.tsx` & list cards: opsional, mini-map tetap pakai garis lurus (hemat kuota); kartu list pakai mock distance sebagai estimasi cepat.
+## Catatan
 
-6. **Loading & fallback**: saat fetch belum selesai atau gagal, fallback ke garis lurus + `distanceKm` dari mock supaya UI tidak kosong.
+- OSRM publik adalah demo server: rate-limit & latency tidak dijamin. Cocok untuk demo/dev, sebutkan ke user.
+- Tidak ada dependency baru.
+- Komponen `MapView`/`MapViewClient` sudah menerima `route: [number,number][]`, tidak perlu diubah.
+- Tidak menyentuh modul admin/ride/auth.
 
-## Catatan teknis
+## File
 
-- Semua call ke Routes API lewat **server function** (gateway butuh `LOVABLE_API_KEY` + `GOOGLE_MAPS_API_KEY` yang hanya ada di server).
-- React Query menghindari refetch saat user pindah-pindah titik.
-- `MapView`/`MapViewClient` sudah menerima `route: [number,number][]` — cukup oper path hasil decode, tidak perlu ubah komponen map.
-- Tidak menyentuh modul lain (admin, ride, dsb).
-
-## File yang disentuh
-
-- BARU: `src/lib/routing.functions.ts`, `src/lib/polyline.ts`, `src/hooks/use-driving-route.ts`
+- BARU: `src/lib/osrm.ts`, `src/hooks/use-osrm-route.ts`
 - EDIT: `src/routes/shuttle.pickup.tsx`, `src/routes/shuttle.pickup.$pointId.tsx`, `src/routes/shuttle.tracking.tsx`
