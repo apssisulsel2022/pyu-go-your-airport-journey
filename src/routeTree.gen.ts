@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ShuttleTrackingRouteImport } from './routes/shuttle.tracking'
 import { Route as ShuttleTicketRouteImport } from './routes/shuttle.ticket'
+import { Route as ShuttleServiceRouteImport } from './routes/shuttle.service'
 import { Route as ShuttleSeatsRouteImport } from './routes/shuttle.seats'
 import { Route as ShuttleScheduleRouteImport } from './routes/shuttle.schedule'
 import { Route as ShuttlePickupRouteImport } from './routes/shuttle.pickup'
@@ -68,6 +69,11 @@ const ShuttleTrackingRoute = ShuttleTrackingRouteImport.update({
 const ShuttleTicketRoute = ShuttleTicketRouteImport.update({
   id: '/shuttle/ticket',
   path: '/shuttle/ticket',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleServiceRoute = ShuttleServiceRouteImport.update({
+  id: '/shuttle/service',
+  path: '/shuttle/service',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShuttleSeatsRoute = ShuttleSeatsRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
   '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/service': typeof ShuttleServiceRoute
   '/shuttle/ticket': typeof ShuttleTicketRoute
   '/shuttle/tracking': typeof ShuttleTrackingRoute
   '/admin/': typeof AdminIndexRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
   '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/service': typeof ShuttleServiceRoute
   '/shuttle/ticket': typeof ShuttleTicketRoute
   '/shuttle/tracking': typeof ShuttleTrackingRoute
   '/admin': typeof AdminIndexRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/shuttle/pickup': typeof ShuttlePickupRoute
   '/shuttle/schedule': typeof ShuttleScheduleRoute
   '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/service': typeof ShuttleServiceRoute
   '/shuttle/ticket': typeof ShuttleTicketRoute
   '/shuttle/tracking': typeof ShuttleTrackingRoute
   '/admin/': typeof AdminIndexRoute
@@ -217,6 +226,7 @@ export interface FileRouteTypes {
     | '/shuttle/pickup'
     | '/shuttle/schedule'
     | '/shuttle/seats'
+    | '/shuttle/service'
     | '/shuttle/ticket'
     | '/shuttle/tracking'
     | '/admin/'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/shuttle/pickup'
     | '/shuttle/schedule'
     | '/shuttle/seats'
+    | '/shuttle/service'
     | '/shuttle/ticket'
     | '/shuttle/tracking'
     | '/admin'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/shuttle/pickup'
     | '/shuttle/schedule'
     | '/shuttle/seats'
+    | '/shuttle/service'
     | '/shuttle/ticket'
     | '/shuttle/tracking'
     | '/admin/'
@@ -278,6 +290,7 @@ export interface RootRouteChildren {
   ShuttlePickupRoute: typeof ShuttlePickupRoute
   ShuttleScheduleRoute: typeof ShuttleScheduleRoute
   ShuttleSeatsRoute: typeof ShuttleSeatsRoute
+  ShuttleServiceRoute: typeof ShuttleServiceRoute
   ShuttleTicketRoute: typeof ShuttleTicketRoute
   ShuttleTrackingRoute: typeof ShuttleTrackingRoute
 }
@@ -338,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/shuttle/ticket'
       fullPath: '/shuttle/ticket'
       preLoaderRoute: typeof ShuttleTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/service': {
+      id: '/shuttle/service'
+      path: '/shuttle/service'
+      fullPath: '/shuttle/service'
+      preLoaderRoute: typeof ShuttleServiceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shuttle/seats': {
@@ -468,6 +488,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShuttlePickupRoute: ShuttlePickupRoute,
   ShuttleScheduleRoute: ShuttleScheduleRoute,
   ShuttleSeatsRoute: ShuttleSeatsRoute,
+  ShuttleServiceRoute: ShuttleServiceRoute,
   ShuttleTicketRoute: ShuttleTicketRoute,
   ShuttleTrackingRoute: ShuttleTrackingRoute,
 }

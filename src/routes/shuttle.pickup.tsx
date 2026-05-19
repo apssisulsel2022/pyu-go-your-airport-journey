@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, Search, Clock, Navigation } from "lucide-react";
+import { MapPin, Search, Clock, Navigation, Ruler } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { PickupMiniMap } from "@/components/PickupMiniMap";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
 
@@ -53,43 +54,58 @@ function PickupPage() {
           ))}
         </div>
 
-        <div className="space-y-2 pt-1">
-          {filtered.map((p, i) => (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                setPickup(p);
-                nav({ to: "/shuttle/schedule" });
-              }}
-              className="flex w-full items-start gap-3 rounded-2xl bg-card p-4 text-left shadow-soft"
-            >
-              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-                <MapPin className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
-                    {p.rayon}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{p.distanceKm} km</span>
+        <div className="space-y-3 pt-1">
+          {filtered.map((p, i) => {
+            const estimasi = Math.round(p.distanceKm * 2.5 + 30); // ~ menit ke KNO
+            return (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.03 }}
+                className="overflow-hidden rounded-2xl bg-card shadow-soft"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr,160px]">
+                  <div className="p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
+                        {p.rayon}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{p.city}</span>
+                    </div>
+                    <div className="mt-1 flex items-start gap-2">
+                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+                        <MapPin className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-bold">{p.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{p.address}</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+                      <Stat icon={<Ruler className="h-3 w-3" />} label="Jarak" value={`${p.distanceKm} km`} />
+                      <Stat icon={<Clock className="h-3 w-3" />} label="ETA jemput" value={`${p.etaMin} mnt`} />
+                      <Stat icon={<Navigation className="h-3 w-3" />} label="ke KNO" value={`~${estimasi} mnt`} />
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setPickup(p);
+                        nav({ to: "/shuttle/service" });
+                      }}
+                      className="mt-3 w-full rounded-full bg-primary py-2 text-xs font-bold text-primary-foreground shadow-card"
+                    >
+                      Pilih titik ini
+                    </button>
+                  </div>
+                  <div className="sm:p-3">
+                    <PickupMiniMap lat={p.lat} lng={p.lng} className="h-32 w-full sm:h-full" />
+                  </div>
                 </div>
-                <div className="mt-1 text-sm font-bold">{p.name}</div>
-                <div className="text-xs text-muted-foreground">{p.address}</div>
-                <div className="mt-2 flex items-center gap-3 text-xs">
-                  <span className="flex items-center gap-1 text-success">
-                    <Clock className="h-3 w-3" /> ETA {p.etaMin} mnt
-                  </span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Navigation className="h-3 w-3" /> ke KNO
-                  </span>
-                </div>
-              </div>
-            </motion.button>
-          ))}
+              </motion.div>
+            );
+          })}
           {filtered.length === 0 && (
             <div className="rounded-2xl bg-card p-8 text-center text-sm text-muted-foreground">
               Tidak ada titik jemput sesuai pencarian
@@ -97,6 +113,15 @@ function PickupPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-secondary/60 p-2">
+      <div className="flex items-center gap-1 text-muted-foreground">{icon} {label}</div>
+      <div className="mt-0.5 text-xs font-bold">{value}</div>
     </div>
   );
 }

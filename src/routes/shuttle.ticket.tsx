@@ -1,10 +1,13 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, Clock, MapPin, User, Bus, Share2, Navigation } from "lucide-react";
+import { toPng } from "html-to-image";
+import { Calendar, Clock, MapPin, User, Bus, Share2, Navigation, Download } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useBooking } from "@/store/booking";
 import { KNO_AIRPORT, formatRupiah } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/shuttle/ticket")({
   head: () => ({ meta: [{ title: "E-Ticket — PYU-GO" }] }),
@@ -13,13 +16,33 @@ export const Route = createFileRoute("/shuttle/ticket")({
 
 function TicketPage() {
   const { pickup, schedule, selectedSeats, bookingCode, date } = useBooking();
+  const ticketRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
   if (!pickup || !schedule || !bookingCode) return <Navigate to="/" />;
+
+  const handleDownload = async () => {
+    if (!ticketRef.current) return;
+    try {
+      setDownloading(true);
+      const dataUrl = await toPng(ticketRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: "#ffffff" });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `eticket-${bookingCode}.png`;
+      a.click();
+      toast.success("E-Ticket berhasil diunduh");
+    } catch {
+      toast.error("Gagal mengunduh tiket");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-hero-gradient pb-10">
       <PageHeader title="E-Ticket" />
 
       <motion.div
+        ref={ticketRef}
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="mx-4 mt-4 overflow-hidden rounded-3xl bg-card shadow-float"
@@ -83,16 +106,25 @@ function TicketPage() {
         </div>
       </motion.div>
 
-      <div className="mt-4 flex gap-2 px-4">
-        <button className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-sm font-semibold text-primary-foreground backdrop-blur">
-          <Share2 className="h-4 w-4" /> Bagikan
-        </button>
-        <Link
-          to="/shuttle/tracking"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-bold text-primary shadow-card"
+      <div className="mt-4 space-y-2 px-4">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-bold text-primary shadow-card disabled:opacity-60"
         >
-          <Navigation className="h-4 w-4" /> Lacak Shuttle
-        </Link>
+          <Download className="h-4 w-4" /> {downloading ? "Menyiapkan..." : "Download E-Ticket"}
+        </button>
+        <div className="flex gap-2">
+          <button className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-sm font-semibold text-primary-foreground backdrop-blur">
+            <Share2 className="h-4 w-4" /> Bagikan
+          </button>
+          <Link
+            to="/shuttle/tracking"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-sm font-semibold text-primary-foreground backdrop-blur"
+          >
+            <Navigation className="h-4 w-4" /> Lacak Shuttle
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 text-center text-xs text-primary-foreground/80">
