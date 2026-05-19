@@ -402,9 +402,20 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
               <Input
                 value={selected.label ?? ""}
                 onChange={(e) => updateLabel(selected.id, e.target.value)}
-                className="h-8 w-20"
+                className="h-8 w-16"
               />
+              <Button size="sm" variant="outline" onClick={() => rotateMarker(selected.id)} title="Putar 90°">
+                <RotateCw className="mr-1 h-3.5 w-3.5" /> {selected.rotation ?? 0}°
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => alignRow(selected.id)} title="Sejajarkan ke baris terdekat">
+                <Magnet className="mr-1 h-3.5 w-3.5" /> Align
+              </Button>
             </>
+          )}
+          {selected.kind !== "seat" && (
+            <Button size="sm" variant="outline" onClick={() => rotateMarker(selected.id)}>
+              <RotateCw className="mr-1 h-3.5 w-3.5" /> {selected.rotation ?? 0}°
+            </Button>
           )}
           <Button
             size="sm"
