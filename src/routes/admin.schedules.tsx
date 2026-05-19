@@ -157,6 +157,11 @@ function ScheduleDialog({ open, onOpenChange, value, onSave }: { open: boolean; 
   useEffect(() => { if (value) setV(value); }, [value]);
 
   if (!value) return null;
+  const vehicle = vehicles.find((x) => x.id === v.vehicleId);
+  const capacity = (vehicle?.seatMap ?? []).filter((m) => m.kind === "seat").length;
+  const quotaValue = v.seatQuota ?? capacity;
+  const quotaInvalid = capacity > 0 && (quotaValue < 1 || quotaValue > capacity);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -171,7 +176,7 @@ function ScheduleDialog({ open, onOpenChange, value, onSave }: { open: boolean; 
           </div>
           <div className="sm:col-span-2">
             <Label className="mb-1 block text-xs">Vehicle</Label>
-            <Select value={v.vehicleId} onValueChange={(x) => setV({ ...v, vehicleId: x })}>
+            <Select value={v.vehicleId} onValueChange={(x) => setV({ ...v, vehicleId: x, seatQuota: undefined })}>
               <SelectTrigger><SelectValue placeholder="Pilih kendaraan" /></SelectTrigger>
               <SelectContent>{vehicles.map((vv) => <SelectItem key={vv.id} value={vv.id}>{vv.name} • {vv.plate}</SelectItem>)}</SelectContent>
             </Select>
@@ -184,9 +189,33 @@ function ScheduleDialog({ open, onOpenChange, value, onSave }: { open: boolean; 
             <Label className="mb-1 block text-xs">Tiba</Label>
             <Input type="time" value={v.arrivalTime} onChange={(e) => setV({ ...v, arrivalTime: e.target.value })} />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <Label className="mb-1 block text-xs">Harga (Rp)</Label>
             <Input type="number" value={v.price} onChange={(e) => setV({ ...v, price: +e.target.value })} />
+          </div>
+          <div>
+            <Label className="mb-1 block text-xs">
+              Kuota kursi <span className="text-muted-foreground">(maks {capacity || "—"})</span>
+            </Label>
+            <Input
+              type="number"
+              min={1}
+              max={capacity || undefined}
+              value={quotaValue}
+              disabled={!vehicle}
+              onChange={(e) => {
+                const n = +e.target.value;
+                setV({ ...v, seatQuota: n === capacity ? undefined : n });
+              }}
+            />
+            {quotaInvalid && (
+              <p className="mt-1 text-[11px] text-destructive">Kuota harus 1–{capacity}.</p>
+            )}
+            {!quotaInvalid && v.seatQuota !== undefined && v.seatQuota < capacity && (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {capacity - v.seatQuota} kursi dikunci (cargo / blocked).
+              </p>
+            )}
           </div>
           <div className="sm:col-span-2 flex items-center justify-between rounded-lg border p-3">
             <div>
@@ -198,7 +227,7 @@ function ScheduleDialog({ open, onOpenChange, value, onSave }: { open: boolean; 
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
-          <Button onClick={() => onSave(v)} disabled={!v.pickupId || !v.vehicleId}>Simpan</Button>
+          <Button onClick={() => onSave(v)} disabled={!v.pickupId || !v.vehicleId || quotaInvalid}>Simpan</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
