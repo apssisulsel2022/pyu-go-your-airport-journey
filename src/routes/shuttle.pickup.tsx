@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Search, Clock, Navigation, Ruler, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { BookingStepper } from "@/components/BookingStepper";
 import { PickupMiniMap } from "@/components/PickupMiniMap";
+import { MapView } from "@/components/MapView";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
 
 
@@ -29,12 +30,62 @@ function PickupPage() {
 
   const selected = filtered.find((p) => p.id === selectedId) ?? null;
 
+  // Map overview data
+  const mapPoints = useMemo(
+    () => [
+      ...filtered.map((p) => ({ lat: p.lat, lng: p.lng, label: p.name })),
+      { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng, label: KNO_AIRPORT.name },
+    ],
+    [filtered],
+  );
+  const airportIdx = filtered.length;
+  const highlightIdx = selected ? filtered.findIndex((p) => p.id === selected.id) : undefined;
+
+  const mapCenter: [number, number] = selected
+    ? [
+        (selected.lat + KNO_AIRPORT.lat) / 2,
+        (selected.lng + KNO_AIRPORT.lng) / 2,
+      ]
+    : filtered.length > 0
+      ? [
+          (filtered.reduce((a, p) => a + p.lat, 0) / filtered.length + KNO_AIRPORT.lat) / 2,
+          (filtered.reduce((a, p) => a + p.lng, 0) / filtered.length + KNO_AIRPORT.lng) / 2,
+        ]
+      : [KNO_AIRPORT.lat, KNO_AIRPORT.lng];
+  const mapZoom = selected ? 11 : 10;
+
   return (
     <div className="min-h-screen bg-secondary/40 pb-32">
       <PageHeader title="Pilih Titik Jemput" subtitle={`Tujuan: ${KNO_AIRPORT.name}`} />
       <BookingStepper />
 
       <div className="mx-auto max-w-md space-y-3 p-4">
+        <div className="relative">
+          <MapView
+            key={`${selectedId ?? "all"}-${rayon}-${filtered.length}`}
+            center={mapCenter}
+            zoom={mapZoom}
+            className="h-56 w-full"
+            points={mapPoints}
+            airportIndex={airportIdx}
+            highlightIndex={highlightIdx}
+            route={
+              selected
+                ? [
+                    [selected.lat, selected.lng],
+                    [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
+                  ]
+                : undefined
+            }
+            onPointClick={(i) => {
+              if (i < filtered.length) setSelectedId(filtered[i].id);
+            }}
+          />
+          <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-card/95 px-2.5 py-1 text-[10px] font-bold shadow-soft backdrop-blur">
+            {selected ? "Rute ke KNO" : `${filtered.length} titik jemput`}
+          </div>
+        </div>
+
         <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-3 shadow-soft">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
@@ -44,6 +95,7 @@ function PickupPage() {
             className="w-full bg-transparent text-sm outline-none"
           />
         </div>
+
 
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {rayons.map((r) => (
