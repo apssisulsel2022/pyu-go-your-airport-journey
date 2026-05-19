@@ -8,6 +8,20 @@ const defaultIcon = new L.DivIcon({
   iconAnchor: [9, 9],
 });
 
+const highlightIcon = new L.DivIcon({
+  className: "",
+  html: `<div style="width:26px;height:26px;border-radius:9999px;background:#0770E3;box-shadow:0 0 0 5px white,0 0 0 7px #0770E3,0 6px 18px rgba(7,112,227,0.55);"></div>`,
+  iconSize: [26, 26],
+  iconAnchor: [13, 13],
+});
+
+const airportIcon = new L.DivIcon({
+  className: "",
+  html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:9999px;background:#111827;color:white;font-size:14px;box-shadow:0 0 0 3px white,0 4px 10px rgba(0,0,0,0.35);">✈</div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
+
 const makeVehicleIcon = (emoji: string) =>
   new L.DivIcon({
     className: "",
@@ -26,6 +40,9 @@ export function MapViewClient({
   showPlane,
   planePos,
   vehicleEmoji = "✈️",
+  highlightIndex,
+  airportIndex,
+  onPointClick,
 }: {
   center: [number, number];
   zoom?: number;
@@ -36,6 +53,9 @@ export function MapViewClient({
   showPlane?: boolean;
   planePos?: [number, number];
   vehicleEmoji?: string;
+  highlightIndex?: number;
+  airportIndex?: number;
+  onPointClick?: (index: number) => void;
 }) {
   return (
     <div className={className + " overflow-hidden rounded-2xl border border-border"}>
@@ -49,9 +69,24 @@ export function MapViewClient({
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {points.map((p, i) => (
-          <Marker key={i} position={[p.lat, p.lng]} icon={defaultIcon} />
-        ))}
+        {points.map((p, i) => {
+          const icon =
+            i === airportIndex
+              ? airportIcon
+              : i === highlightIndex
+                ? highlightIcon
+                : defaultIcon;
+          return (
+            <Marker
+              key={i}
+              position={[p.lat, p.lng]}
+              icon={icon}
+              eventHandlers={
+                onPointClick ? { click: () => onPointClick(i) } : undefined
+              }
+            />
+          );
+        })}
         {route && route.length > 1 ? (
           <Polyline positions={route} pathOptions={{ color: "#94a3b8", weight: 4, opacity: 0.5, dashArray: "6 8" }} />
         ) : null}
