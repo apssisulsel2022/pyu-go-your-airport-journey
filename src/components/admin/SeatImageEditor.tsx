@@ -310,11 +310,42 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
           >
-            <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full" draggable={false} />
+            <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full opacity-90" draggable={false} />
             {markers.map((m) => {
               const meta = toolMeta[m.kind];
               const Icon = meta.icon;
               const sel = m.id === selectedId;
+              if (m.kind === "seat") {
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    data-marker="1"
+                    onPointerDown={(e) => startDrag(e, m.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (justDraggedRef.current) {
+                        justDraggedRef.current = false;
+                        return;
+                      }
+                      setSelectedId(m.id);
+                    }}
+                    className={cn(
+                      "absolute -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-md transition active:cursor-grabbing",
+                      sel && "scale-110",
+                    )}
+                    style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
+                  >
+                    <SeatGlyph
+                      label={m.label}
+                      state={sel ? "selected" : "available"}
+                      rotation={m.rotation ?? 0}
+                      size={36}
+                      selectedInEditor={sel}
+                    />
+                  </button>
+                );
+              }
               return (
                 <button
                   key={m.id}
@@ -336,11 +367,26 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
                   )}
                   style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
                 >
-                  {m.kind === "seat" ? m.label : <Icon className="h-3.5 w-3.5" />}
+                  <Icon className="h-3.5 w-3.5" />
                 </button>
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Legend */}
+      {imageUrl && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5"><SeatGlyph size={20} state="available" /> Tersedia</span>
+          <span className="flex items-center gap-1.5"><SeatGlyph size={20} state="selected" /> Dipilih</span>
+          <span className="flex items-center gap-1.5"><SeatGlyph size={20} state="booked" /> Terisi</span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"><Car className="h-2.5 w-2.5" /></span> Sopir
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-flex h-4 w-3 items-center justify-center rounded-sm bg-amber-400 text-amber-950"><DoorOpen className="h-2.5 w-2.5" /></span> Pintu
+          </span>
         </div>
       )}
 
