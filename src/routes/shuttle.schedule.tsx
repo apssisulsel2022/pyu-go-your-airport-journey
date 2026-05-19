@@ -5,6 +5,7 @@ import { format, addDays, isSameDay } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { ArrowRight, Users, Bus } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { BookingStepper } from "@/components/BookingStepper";
 import { getSchedulesForPickup, formatRupiah, KNO_AIRPORT } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
 import { useAdmin, TIER_LABEL, TYPE_LABEL } from "@/store/admin";

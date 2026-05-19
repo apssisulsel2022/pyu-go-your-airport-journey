@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { MapPin, Search, Clock, Navigation, Ruler } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, Search, Clock, Navigation, Ruler, ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { BookingStepper } from "@/components/BookingStepper";
 import { PickupMiniMap } from "@/components/PickupMiniMap";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/shuttle/pickup")({
 function PickupPage() {
   const [q, setQ] = useState("");
   const [rayon, setRayon] = useState<string>("Semua");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const nav = useNavigate();
   const setPickup = useBooking((s) => s.setPickup);
 
@@ -22,14 +24,18 @@ function PickupPage() {
   const filtered = pickupPoints.filter(
     (p) =>
       (rayon === "Semua" || p.rayon === rayon) &&
-      (p.name.toLowerCase().includes(q.toLowerCase()) || p.address.toLowerCase().includes(q.toLowerCase()))
+      (p.name.toLowerCase().includes(q.toLowerCase()) ||
+        p.address.toLowerCase().includes(q.toLowerCase())),
   );
 
-  return (
-    <div className="min-h-screen bg-secondary/40">
-      <PageHeader title="Pilih Titik Jemput" subtitle={`Tujuan: ${KNO_AIRPORT.name}`} />
+  const selected = filtered.find((p) => p.id === selectedId) ?? null;
 
-      <div className="space-y-3 p-4">
+  return (
+    <div className="min-h-screen bg-secondary/40 pb-32">
+      <PageHeader title="Pilih Titik Jemput" subtitle={`Tujuan: ${KNO_AIRPORT.name}`} />
+      <BookingStepper />
+
+      <div className="mx-auto max-w-md space-y-3 p-4">
         <div className="flex items-center gap-2 rounded-2xl bg-card px-4 py-3 shadow-soft">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
@@ -46,7 +52,9 @@ function PickupPage() {
               key={r}
               onClick={() => setRayon(r)}
               className={`whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
-                rayon === r ? "bg-primary text-primary-foreground shadow-card" : "bg-card text-muted-foreground border border-border"
+                rayon === r
+                  ? "bg-primary text-primary-foreground shadow-card"
+                  : "bg-card text-muted-foreground border border-border"
               }`}
             >
               {r}
@@ -54,56 +62,64 @@ function PickupPage() {
           ))}
         </div>
 
-        <div className="space-y-3 pt-1">
+        <div className="space-y-2 pt-1">
           {filtered.map((p, i) => {
-            const estimasi = Math.round(p.distanceKm * 2.5 + 30); // ~ menit ke KNO
+            const estimasi = Math.round(p.distanceKm * 2.5 + 30);
+            const active = selectedId === p.id;
             return (
-              <motion.div
+              <motion.button
                 key={p.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.03 }}
-                className="overflow-hidden rounded-2xl bg-card shadow-soft"
+                transition={{ delay: i * 0.02 }}
+                onClick={() => setSelectedId(active ? null : p.id)}
+                className={`block w-full overflow-hidden rounded-2xl bg-card p-4 text-left shadow-soft transition ${
+                  active ? "ring-2 ring-primary" : ""
+                }`}
               >
-                <div className="grid grid-cols-1 sm:grid-cols-[1fr,160px]">
-                  <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${
+                      active ? "bg-primary text-primary-foreground" : "bg-primary-soft text-primary"
+                    }`}
+                  >
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground">
                         {p.rayon}
                       </span>
-                      <span className="text-xs text-muted-foreground">{p.city}</span>
+                      <span className="text-[11px] text-muted-foreground">{p.city}</span>
                     </div>
-                    <div className="mt-1 flex items-start gap-2">
-                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-                        <MapPin className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-bold">{p.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">{p.address}</div>
-                      </div>
-                    </div>
+                    <div className="mt-1 text-sm font-bold">{p.name}</div>
+                    <div className="truncate text-xs text-muted-foreground">{p.address}</div>
 
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
-                      <Stat icon={<Ruler className="h-3 w-3" />} label="Jarak" value={`${p.distanceKm} km`} />
-                      <Stat icon={<Clock className="h-3 w-3" />} label="ETA jemput" value={`${p.etaMin} mnt`} />
-                      <Stat icon={<Navigation className="h-3 w-3" />} label="ke KNO" value={`~${estimasi} mnt`} />
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+                      <Stat
+                        icon={<Ruler className="h-3 w-3" />}
+                        label="Jarak"
+                        value={`${p.distanceKm} km`}
+                      />
+                      <Stat
+                        icon={<Clock className="h-3 w-3" />}
+                        label="ETA jemput"
+                        value={`${p.etaMin} mnt`}
+                      />
+                      <Stat
+                        icon={<Navigation className="h-3 w-3" />}
+                        label="ke KNO"
+                        value={`~${estimasi} mnt`}
+                      />
                     </div>
-
-                    <button
-                      onClick={() => {
-                        setPickup(p);
-                        nav({ to: "/shuttle/service" });
-                      }}
-                      className="mt-3 w-full rounded-full bg-primary py-2 text-xs font-bold text-primary-foreground shadow-card"
-                    >
-                      Pilih titik ini
-                    </button>
                   </div>
-                  <div className="sm:p-3">
-                    <PickupMiniMap lat={p.lat} lng={p.lng} className="h-32 w-full sm:h-full" />
-                  </div>
+                  <ChevronRight
+                    className={`h-4 w-4 shrink-0 text-muted-foreground transition ${
+                      active ? "rotate-90 text-primary" : ""
+                    }`}
+                  />
                 </div>
-              </motion.div>
+              </motion.button>
             );
           })}
           {filtered.length === 0 && (
@@ -113,14 +129,60 @@ function PickupPage() {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ y: 120, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 120, opacity: 0 }}
+            transition={{ type: "spring", damping: 22, stiffness: 220 }}
+            className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 rounded-t-3xl border-t border-border bg-card/95 px-4 pb-4 pt-3 backdrop-blur shadow-float"
+          >
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-muted" />
+            <div className="flex gap-3">
+              <PickupMiniMap
+                lat={selected.lat}
+                lng={selected.lng}
+                className="h-20 w-28 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-bold">{selected.name}</div>
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {selected.distanceKm} km • ETA {selected.etaMin} mnt ke titik
+                </div>
+                <button
+                  onClick={() => {
+                    setPickup(selected);
+                    nav({ to: "/shuttle/service" });
+                  }}
+                  className="mt-2 w-full rounded-full bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-card"
+                >
+                  Pilih titik ini
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function Stat({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
   return (
-    <div className="rounded-lg bg-secondary/60 p-2">
-      <div className="flex items-center gap-1 text-muted-foreground">{icon} {label}</div>
+    <div className="rounded-lg bg-secondary/60 p-1.5">
+      <div className="flex items-center gap-1 text-muted-foreground">
+        {icon} {label}
+      </div>
       <div className="mt-0.5 text-xs font-bold">{value}</div>
     </div>
   );
