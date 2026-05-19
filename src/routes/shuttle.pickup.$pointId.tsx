@@ -110,10 +110,7 @@ function PickupRoutePreview() {
               { lat: point.lat, lng: point.lng, label: point.name },
               { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng, label: "KNO" },
             ]}
-            route={[
-              [point.lat, point.lng],
-              [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
-            ]}
+            route={routePath}
             showPlane
             planePos={[KNO_AIRPORT.lat, KNO_AIRPORT.lng]}
             vehicleEmoji="✈️"
