@@ -25,15 +25,24 @@ export interface SeatMarker {
   rotation?: 0 | 90 | 180 | 270;
 }
 
+export type VehicleStatus = "active" | "maintenance" | "offline";
+
 export interface VehicleTemplate {
   id: string;
   name: string;
   type: VehicleType;
   plate: string;
   tier: VehicleTier;
+  status?: VehicleStatus; // default "active"
   imageUrl?: string;
   seatMap?: SeatMarker[];
 }
+
+export const VEHICLE_STATUS_LABEL: Record<VehicleStatus, string> = {
+  active: "Aktif",
+  maintenance: "Maintenance",
+  offline: "Offline",
+};
 
 export const TIER_ORDER: VehicleTier[] = ["Reguler", "SemiExecutive", "Executive"];
 export const TYPE_LABEL: Record<VehicleType, string> = {
@@ -173,6 +182,7 @@ const seedVehicles = (): VehicleTemplate[] => {
         type,
         tier,
         plate: plates[i++] ?? "BK 0000 GO",
+        status: "active",
         seatMap: defaultSeatMap(type),
       });
     });
