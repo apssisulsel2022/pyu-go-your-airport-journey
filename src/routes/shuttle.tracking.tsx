@@ -131,7 +131,11 @@ function TrackingPage() {
           ? haversineKm(currentPos, airportPos)
           : 0;
 
-  const etaSec = Math.max(0, Math.round(DURATION_SEC * (1 - progress)));
+  // ETA from remaining distance & current speed (more "alive" than simulation timer)
+  const etaSec =
+    phase === "arrived"
+      ? 0
+      : Math.max(15, Math.round((remainingKm / Math.max(15, speed)) * 3600));
   const etaMin = Math.floor(etaSec / 60);
   const etaRemSec = etaSec % 60;
   const arrivalTime = new Date(now + etaSec * 1000);
