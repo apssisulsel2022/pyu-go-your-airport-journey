@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
-export const Route = createFileRoute("/_admin/schedules")({
+export const Route = createFileRoute("/admin/schedules")({
   component: SchedulesPage,
 });
 
