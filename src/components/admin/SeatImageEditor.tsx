@@ -270,6 +270,7 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
           </div>
         )}
 
+        {imageUrl && (
           <div className="flex items-center gap-1 rounded-md border border-input p-1">
             <button
               type="button"
