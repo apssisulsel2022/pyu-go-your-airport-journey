@@ -146,6 +146,30 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
     onMarkersChange(markers.map((m) => (m.id === id && m.kind === "seat" ? { ...m, label } : m)));
   };
 
+  const rotateMarker = (id: string) => {
+    onMarkersChange(
+      markers.map((m) => {
+        if (m.id !== id) return m;
+        const next = (((m.rotation ?? 0) + 90) % 360) as 0 | 90 | 180 | 270;
+        return { ...m, rotation: next };
+      }),
+    );
+  };
+
+  const alignRow = (id: string) => {
+    const target = markers.find((m) => m.id === id);
+    if (!target) return;
+    // Find nearest seat in same approximate row (Δy < 0.06) and snap Y.
+    const peer = markers
+      .filter((m) => m.id !== id && m.kind === "seat" && Math.abs(m.y - target.y) < 0.06)
+      .sort((a, b) => Math.abs(a.y - target.y) - Math.abs(b.y - target.y))[0];
+    if (!peer) {
+      toast.info("Tidak ada kursi lain di baris ini.");
+      return;
+    }
+    onMarkersChange(markers.map((m) => (m.id === id ? { ...m, y: peer.y } : m)));
+  };
+
   // Keyboard: Delete/Backspace removes selected, Esc clears.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
