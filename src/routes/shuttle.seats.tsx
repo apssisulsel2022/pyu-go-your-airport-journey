@@ -47,8 +47,9 @@ function SeatsPage() {
         title="Pilih Kursi"
         subtitle={`${schedule.vehicleName} • ${schedule.departureTime}`}
       />
+      <BookingStepper />
 
-      <div className="p-5">
+      <div className="mx-auto max-w-md p-5">
         {useImageMap ? (
           <div className="mx-auto w-full max-w-md">
             <div className="mb-3 flex items-center justify-center gap-2 text-xs text-muted-foreground">
