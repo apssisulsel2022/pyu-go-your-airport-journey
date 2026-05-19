@@ -1,71 +1,72 @@
-# Rebuild Admin / Vehicles
+# Penyempurnaan Flow Booking Shuttle
 
-Restrukturisasi halaman `admin/vehicles` agar selaras dengan model bisnis: **3 jenis kendaraan** (Minicar, SUV, Hiace) × **3 tier layanan** (Reguler, SemiExecutive, Executive). Setiap kendaraan memiliki layout kursi realistis berbasis **gambar denah** yang di-upload admin, dengan marker kursi yang ditempatkan di atas gambar.
+Tujuan: meningkatkan tahapan pemesanan dari pilih titik jemput → jadwal → kursi → pembayaran → e-ticket agar lebih informatif dan visual. Penambahan mini map dengan pengukuran jarak, pemilihan tier service yang lebih jelas, dan alur lanjutan yang konsisten hingga download e-ticket.
 
-## Tujuan
+## Ringkasan perubahan per tahap
 
-- Ganti taxonomy lama (`hiace`/`elf`/`minibus` + Economy/Business/VIP) menjadi `minicar`/`suv`/`hiace` + `Reguler`/`SemiExecutive`/`Executive`.
-- Jadikan **Image Map** sebagai cara utama mendesain layout kursi (gambar di-upload admin). Mode grid lama dihapus dari UI editor.
-- Tampilkan daftar kendaraan dikelompokkan per tier, dengan filter cepat berdasarkan tipe & tier.
-- Pertahankan kompatibilitas: data schedule/booking lama tetap jalan (mapping tipe lama → baru saat seed).
+### 1. Pilih Titik Jemput (`/shuttle/pickup`)
+- Tambahkan **mini map** pada setiap kartu titik jemput menggunakan komponen `MapView` yang sudah ada (Leaflet).
+- Mini map menampilkan: titik jemput, KNO airport, dan polyline rute lurus antar keduanya.
+- Tampilkan info lengkap di kartu: jarak (km), estimasi waktu tempuh ke KNO, ETA penjemputan, rayon, alamat, kota.
+- Layout kartu jadi lebih besar (2 kolom info + map kecil di kanan / atas pada mobile).
+- Saat hover/aktif, kartu menonjol; tombol "Pilih titik ini" eksplisit.
 
-## Perubahan Data (src/store/admin.ts & mock-data.ts)
+### 2. Pilih Jenis Service (BARU — `/shuttle/service`)
+- Setelah memilih titik jemput, pengguna ke halaman pemilihan tier: **Reguler / SemiExecutive / Executive**.
+- Tiap tier ditampilkan sebagai kartu besar dengan: deskripsi singkat, range harga, jumlah kendaraan tersedia, fasilitas (AC, recliner, dsb. — mock).
+- Setelah pilih tier, simpan ke store dan lanjut ke halaman jadwal yang sudah difilter.
 
-- `VehicleType` di `mock-data.ts` diperluas: `"minicar" | "suv" | "hiace"` (alias lama `elf`/`minibus` dipetakan ke `suv`/`hiace` saat seed dimuat ulang).
-- `VehicleTemplate.className` diganti jadi `tier: "Reguler" | "SemiExecutive" | "Executive"`.
-- Field `rows`/`cols`/`layout` (grid lama) **dihapus** dari `VehicleTemplate`. `imageUrl` + `seatMap` jadi sumber tunggal kursi.
-- Helper `layoutToCounts`/`renumberLayout`/`SeatLayoutGrid` tidak lagi dipakai di vehicles (boleh tetap ada untuk file lain).
-- Seed: 9 kendaraan (3 tipe × 3 tier) dengan `imageUrl` placeholder + `seatMap` minimal (admin akan upload gambar nyata).
-- Kapasitas default per tipe: Minicar 6, SUV 7, Hiace 12 — admin bisa tambah/kurang lewat editor.
+### 3. Pilih Kendaraan & Jadwal (`/shuttle/schedule`)
+- Filter otomatis hanya jadwal dengan `className === tier` terpilih.
+- Tampilkan informasi kendaraan lebih lengkap per kartu jadwal:
+  - thumbnail kendaraan (dari `imageUrl` admin vehicle),
+  - nama, plat, tipe (Minicar/SUV/Hiace),
+  - jam berangkat–tiba, durasi,
+  - sisa kursi, harga,
+  - fasilitas singkat (badge).
+- Date strip 7 hari tetap.
 
-## UI Halaman (src/routes/admin.vehicles.tsx)
+### 4. Pilih Kursi (`/shuttle/seats`) — minor polish
+- Sudah memakai `SeatImageMap`. Tambahkan ringkasan kendaraan + tier + titik jemput → KNO di header agar konteks jelas.
+- Footer total tetap.
 
-Layout baru:
+### 5. Pembayaran (`/shuttle/payment`) — tetap, hanya tambah ringkasan service & rute.
 
-```text
-Header: "Vehicles"  [+ Add vehicle]
-Filter bar: [Tipe ▾ All|Minicar|SUV|Hiace]  [Tier ▾ All|Reguler|SemiExec|Executive]
-─────────────────────────────────────────────
-Section: Reguler
-  card | card | card
-Section: SemiExecutive
-  card | card | card
-Section: Executive
-  card | card | card
-```
+### 6. E-Ticket (`/shuttle/ticket`) — tambah tombol **Download E-Ticket** (PDF/PNG)
+- Gunakan `html-to-image` untuk merender area tiket → PNG dan trigger download.
+- Tombol "Download E-Ticket" di bawah QR.
+- Tampilkan info lengkap: nama, kode booking, rute, jadwal, kendaraan, kursi, harga, QR.
 
-- Card: thumbnail denah (SeatImageMap kecil), nama, plat, badge tipe + tier, jumlah kursi, tombol Edit/Hapus.
-- Section dikelompokkan per tier (atau per tipe — toggle di filter bar).
-- Empty state per section bila tidak ada kendaraan.
+## Detail Teknis
 
-## Editor (Sheet)
+### Store
+- Tambah field `tier: VehicleTier | null` di `useBooking` + setter `setTier`.
+- `reset()` reset tier juga.
 
-Hanya **satu mode**: Image Map editor.
+### Routing baru
+- File: `src/routes/shuttle.service.tsx` (route `/shuttle/service`).
+- Update arah navigasi:
+  - `pickup` → `/shuttle/service`
+  - `service` → `/shuttle/schedule`
+  - sisanya tidak berubah.
 
-Field:
-- Nama, Plat
-- Tipe (Minicar / SUV / Hiace) — preset kapasitas default saat ganti tipe
-- Tier (Reguler / SemiExecutive / Executive)
-- Upload gambar denah (drag-drop / file picker) — preview langsung
-- Stage `SeatImageEditor` (komponen existing) untuk menempatkan marker `seat`/`driver`/`door` di atas gambar
-- Footer: total kursi terhitung otomatis, tombol Renumber, Simpan/Batal
+### Mini map di pickup
+- Reuse `MapView` (Leaflet). Set `className="h-32 w-full"`, `points` = [pickup, KNO], `route` = [[pickup.lat,lng],[KNO.lat,lng]], `zoom` agar fit keduanya (pakai center = midpoint).
+- Jarak ditampilkan dari field `distanceKm` yang ada; tambahkan rumus haversine kalau perlu untuk konsistensi (gunakan `distanceKm` mock saja agar simpel).
 
-Validasi simpan: minimal `imageUrl` ada, minimal 1 marker `seat`. Bila tidak, disable tombol Simpan + tampilkan hint.
+### Filter jadwal per tier
+- `getSchedulesForPickup` tetap; filter di komponen: `schedules.filter(s => s.className === tier)`.
+- Jika kosong, tampilkan empty state.
 
-## Migrasi Data Tersimpan
+### Download E-ticket
+- `bun add html-to-image`.
+- Tombol memanggil `toPng(ticketRef.current)` → buat `<a download="eticket-{code}.png">` dan click.
 
-Store di-persist dengan key `pyu-admin-v1`. Naikkan ke `pyu-admin-v2` agar user lama dapat seed baru tanpa konflik schema. Atau tambahkan `migrate` di `persist` yang memetakan `className` → `tier` dan `type` lama → baru.
+### Komponen baru
+- `src/components/PickupMiniMap.tsx` — wrapper kecil sekitar `MapView` untuk konsistensi.
+- `src/routes/shuttle.service.tsx` — halaman pilih tier.
 
-## File yang Disentuh
-
-- `src/lib/mock-data.ts` — perluas `VehicleType`, update seed schedule agar pakai tipe baru.
-- `src/store/admin.ts` — ganti schema `VehicleTemplate`, seed 9 kendaraan, migrate persist.
-- `src/routes/admin.vehicles.tsx` — rewrite halaman + editor (image-only).
-- `src/components/admin/SeatImageEditor.tsx` — minor: dukung kapasitas default & label tier (jika perlu).
-- (Tidak diubah) `SeatImageMap.tsx`, `SeatGlyph.tsx` — sudah cukup.
-
-## Di Luar Cakupan
-
-- Penyimpanan gambar ke backend (tetap pakai data URL / object URL lokal).
-- Harga per tier (tetap di schedule).
-- Editor multi-deck.
+## Out of scope
+- Perubahan backend / persistensi.
+- Perhitungan jarak realistis via routing API (gunakan distance mock + garis lurus).
+- Multi-passenger detail form changes.
