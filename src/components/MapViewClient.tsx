@@ -88,7 +88,7 @@ export function MapViewClient({
           );
         })}
         {route && route.length > 1 ? (
-          <Polyline positions={route} pathOptions={{ color: "#94a3b8", weight: 4, opacity: 0.5, dashArray: "6 8" }} />
+          <Polyline positions={route} pathOptions={{ color: "#0770E3", weight: 6, opacity: 0.9 }} />
         ) : null}
         {traveledRoute && traveledRoute.length > 1 ? (
           <Polyline positions={traveledRoute} pathOptions={{ color: "#0770E3", weight: 5, opacity: 0.9 }} />
