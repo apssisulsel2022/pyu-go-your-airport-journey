@@ -201,7 +201,8 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
               onSave({
                 ...v,
                 layout: renumberLayout(v.layout),
-                seatMap: v.seatMap ? v.seatMap : undefined,
+                seatMap: v.seatMap && v.seatMap.length > 0 ? v.seatMap : undefined,
+                imageUrl: v.seatMap && v.seatMap.length > 0 ? v.imageUrl : v.imageUrl,
               })
             }
           >
