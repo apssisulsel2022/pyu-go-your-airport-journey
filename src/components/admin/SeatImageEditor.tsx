@@ -1,10 +1,11 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import type { SeatMarker } from "@/store/admin";
 import { renumberSeatMap, countSeatsInMap } from "@/store/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car } from "lucide-react";
+import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car, ZoomIn, ZoomOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Tool = "seat" | "driver" | "door";
 
@@ -21,7 +22,6 @@ const toolMeta: Record<Tool, { label: string; icon: typeof Armchair; cls: string
   door: { label: "Pintu", icon: DoorOpen, cls: "bg-amber-400 text-amber-950" },
 };
 
-// Compress image via canvas to keep localStorage happy.
 async function fileToDataUrl(file: File, maxDim = 1200): Promise<string> {
   const dataUrl = await new Promise<string>((res, rej) => {
     const fr = new FileReader();
@@ -48,11 +48,19 @@ async function fileToDataUrl(file: File, maxDim = 1200): Promise<string> {
 export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersChange }: Props) {
   const [tool, setTool] = useState<Tool>("seat");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(1);
   const stageRef = useRef<HTMLDivElement>(null);
-  const dragging = useRef<{ id: string; offX: number; offY: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef<{ id: string; startX: number; startY: number; moved: boolean } | null>(null);
+  const justDraggedRef = useRef(false);
 
   const handleUpload = async (file: File) => {
     const url = await fileToDataUrl(file);
+    // Rough size estimate from data URL length.
+    const approxBytes = Math.round((url.length * 3) / 4);
+    if (approxBytes > 500_000) {
+      toast.warning("Gambar cukup besar (" + Math.round(approxBytes / 1024) + " KB). Pertimbangkan upload foto lebih kecil agar penyimpanan tidak penuh.");
+    }
     onImageChange(url);
   };
 
@@ -66,12 +74,26 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
 
   const onStageClick = (e: React.MouseEvent) => {
     if (!imageUrl) return;
+    if (justDraggedRef.current) {
+      justDraggedRef.current = false;
+      return;
+    }
     if (e.target !== e.currentTarget && (e.target as HTMLElement).dataset.marker) return;
     const { x, y } = getRel(e);
     const id = "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
-    const next: SeatMarker = tool === "seat" ? { id, x, y, kind: "seat", label: "?" } : { id, x, y, kind: tool };
-    const merged = [...markers, next];
-    onMarkersChange(tool === "seat" ? renumberSeatMap(merged) : merged);
+    let next = [...markers];
+    if (tool === "driver" || tool === "door") {
+      const existing = next.find((m) => m.kind === tool);
+      if (existing) {
+        next = next.filter((m) => m.id !== existing.id);
+        toast.info(`Marker ${toolMeta[tool].label.toLowerCase()} sebelumnya digantikan.`);
+      }
+      next.push({ id, x, y, kind: tool });
+      onMarkersChange(next);
+    } else {
+      next.push({ id, x, y, kind: "seat", label: "?" });
+      onMarkersChange(renumberSeatMap(next));
+    }
     setSelectedId(id);
   };
 
@@ -79,12 +101,7 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
     e.stopPropagation();
     const m = markers.find((x) => x.id === id);
     if (!m) return;
-    const r = stageRef.current!.getBoundingClientRect();
-    dragging.current = {
-      id,
-      offX: e.clientX - (r.left + m.x * r.width),
-      offY: e.clientY - (r.top + m.y * r.height),
-    };
+    dragging.current = { id, startX: e.clientX, startY: e.clientY, moved: false };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     setSelectedId(id);
   };
@@ -92,28 +109,49 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
   const onMove = useCallback(
     (e: React.PointerEvent) => {
       if (!dragging.current) return;
-      const { id, offX, offY } = dragging.current;
-      const r = stageRef.current!.getBoundingClientRect();
-      const x = Math.min(1, Math.max(0, (e.clientX - offX - r.left) / r.width));
-      const y = Math.min(1, Math.max(0, (e.clientY - offY - r.top) / r.height));
-      onMarkersChange(markers.map((m) => (m.id === id ? { ...m, x, y } : m)));
+      const d = dragging.current;
+      if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 4) return;
+      d.moved = true;
+      const { x, y } = getRel(e);
+      onMarkersChange(markers.map((m) => (m.id === d.id ? { ...m, x, y } : m)));
     },
     [markers, onMarkersChange],
   );
 
   const endDrag = () => {
+    if (dragging.current?.moved) justDraggedRef.current = true;
     dragging.current = null;
   };
 
-  const removeMarker = (id: string) => {
-    const next = markers.filter((m) => m.id !== id);
-    onMarkersChange(renumberSeatMap(next));
-    if (selectedId === id) setSelectedId(null);
-  };
+  const removeMarker = useCallback(
+    (id: string) => {
+      const next = markers.filter((m) => m.id !== id);
+      onMarkersChange(renumberSeatMap(next));
+      setSelectedId((cur) => (cur === id ? null : cur));
+    },
+    [markers, onMarkersChange],
+  );
 
   const updateLabel = (id: string, label: string) => {
     onMarkersChange(markers.map((m) => (m.id === id && m.kind === "seat" ? { ...m, label } : m)));
   };
+
+  // Keyboard: Delete/Backspace removes selected, Esc clears.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!selectedId) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        removeMarker(selectedId);
+      } else if (e.key === "Escape") {
+        setSelectedId(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, removeMarker]);
 
   const selected = markers.find((m) => m.id === selectedId);
 
@@ -173,6 +211,31 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
         >
           <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus semua
         </Button>
+
+        {imageUrl && (
+          <div className="flex items-center gap-1 rounded-md border border-input p-1">
+            <button
+              type="button"
+              className="rounded p-1 hover:bg-accent disabled:opacity-40"
+              onClick={() => setZoom((z) => Math.max(1, +(z - 0.25).toFixed(2)))}
+              disabled={zoom <= 1}
+              aria-label="Zoom out"
+            >
+              <ZoomOut className="h-3.5 w-3.5" />
+            </button>
+            <span className="w-10 text-center text-xs font-medium tabular-nums">{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              className="rounded p-1 hover:bg-accent disabled:opacity-40"
+              onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
+              disabled={zoom >= 3}
+              aria-label="Zoom in"
+            >
+              <ZoomIn className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
         <div className="ml-auto text-xs text-muted-foreground">{countSeatsInMap(markers)} kursi</div>
       </div>
 
@@ -183,39 +246,50 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
         </div>
       ) : (
         <div
-          ref={stageRef}
-          className="relative w-full select-none overflow-hidden rounded-2xl border-2 border-border bg-muted/30"
-          onClick={onStageClick}
-          onPointerMove={onMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
+          ref={wrapRef}
+          className="relative w-full overflow-auto rounded-2xl border-2 border-border bg-muted/30"
+          style={{ maxHeight: "70vh" }}
         >
-          <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full" draggable={false} />
-          {markers.map((m) => {
-            const meta = toolMeta[m.kind];
-            const Icon = meta.icon;
-            const sel = m.id === selectedId;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                data-marker="1"
-                onPointerDown={(e) => startDrag(e, m.id)}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedId(m.id);
-                }}
-                className={cn(
-                  "absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center rounded-full border-2 text-xs font-bold shadow-md transition active:cursor-grabbing",
-                  meta.cls,
-                  sel ? "ring-2 ring-offset-2 ring-ring scale-110" : "border-background/80",
-                )}
-                style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
-              >
-                {m.kind === "seat" ? m.label : <Icon className="h-3.5 w-3.5" />}
-              </button>
-            );
-          })}
+          <div
+            ref={stageRef}
+            className="relative select-none"
+            style={{ width: `${zoom * 100}%` }}
+            onClick={onStageClick}
+            onPointerMove={onMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+          >
+            <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full" draggable={false} />
+            {markers.map((m) => {
+              const meta = toolMeta[m.kind];
+              const Icon = meta.icon;
+              const sel = m.id === selectedId;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  data-marker="1"
+                  onPointerDown={(e) => startDrag(e, m.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (justDraggedRef.current) {
+                      justDraggedRef.current = false;
+                      return;
+                    }
+                    setSelectedId(m.id);
+                  }}
+                  className={cn(
+                    "absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center rounded-full border-2 text-xs font-bold shadow-md transition active:cursor-grabbing",
+                    meta.cls,
+                    sel ? "ring-2 ring-offset-2 ring-ring scale-110" : "border-background/80",
+                  )}
+                  style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
+                >
+                  {m.kind === "seat" ? m.label : <Icon className="h-3.5 w-3.5" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -251,7 +325,7 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
 
       {imageUrl && (
         <p className="text-xs text-muted-foreground">
-          Pilih tool lalu klik gambar untuk menaruh marker. Drag marker untuk reposisi. Klik marker untuk edit/hapus.
+          Pilih tool lalu klik gambar untuk menaruh marker. Drag untuk reposisi. Tekan Delete untuk menghapus marker terpilih.
         </p>
       )}
     </div>
