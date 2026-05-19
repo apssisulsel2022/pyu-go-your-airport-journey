@@ -82,14 +82,7 @@ function PickupPage() {
             points={mapPoints}
             airportIndex={airportIdx}
             highlightIndex={highlightIdx}
-            route={
-              selected
-                ? [
-                    [selected.lat, selected.lng],
-                    [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
-                  ]
-                : undefined
-            }
+            route={routePath}
             onPointClick={(i) => {
               if (i < filtered.length) setSelectedId(filtered[i].id);
             }}
