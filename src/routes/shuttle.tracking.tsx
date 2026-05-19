@@ -281,34 +281,55 @@ function TrackingPage() {
           </div>
         </motion.div>
 
-        {/* Driver card */}
-        <div className="mt-3 rounded-2xl bg-card p-4 shadow-soft">
-          <div className="flex items-center gap-3">
-            <div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary font-bold">
-              AS
-            </div>
-            <div className="flex-1">
-              <div className="text-sm font-bold">Andi Saputra</div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Star className="h-3 w-3 fill-warning text-warning" /> 4.9 • {schedule.vehicleName}
+        {/* Driver card — deterministic from plate */}
+        {(() => {
+          const drivers = [
+            { name: "Andi Saputra", phone: "+62811000101" },
+            { name: "Budi Hartono", phone: "+62811000102" },
+            { name: "Citra Wijaya", phone: "+62811000103" },
+            { name: "Dimas Pratama", phone: "+62811000104" },
+            { name: "Eko Susilo", phone: "+62811000105" },
+          ];
+          const hash = schedule.plate.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+          const driver = drivers[hash % drivers.length];
+          const initials = driver.name.split(" ").map((s) => s[0]).join("").slice(0, 2);
+          const rating = (4.7 + ((hash % 3) * 0.1)).toFixed(1);
+          return (
+            <div className="mt-3 rounded-2xl bg-card p-4 shadow-soft">
+              <div className="flex items-center gap-3">
+                <div className="grid h-12 w-12 place-items-center rounded-full bg-primary-soft text-primary font-bold">
+                  {initials}
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold">{driver.name}</div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Star className="h-3 w-3 fill-warning text-warning" /> {rating} • {schedule.vehicleName}
+                  </div>
+                  <div className="text-xs font-semibold text-primary">{schedule.plate}</div>
+                </div>
+                <a
+                  href={`tel:${driver.phone}`}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-success text-white"
+                >
+                  <Phone className="h-4 w-4" />
+                </a>
+                <button
+                  onClick={() => toast.info("Chat driver belum tersedia di demo")}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </button>
               </div>
-              <div className="text-xs font-semibold text-primary">{schedule.plate}</div>
             </div>
-            <button className="grid h-10 w-10 place-items-center rounded-full bg-success text-white">
-              <Phone className="h-4 w-4" />
-            </button>
-            <button className="grid h-10 w-10 place-items-center rounded-full bg-primary text-primary-foreground">
-              <MessageCircle className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+          );
+        })()}
 
         <div className="mt-3 rounded-2xl border border-warning/30 bg-warning/10 p-3 text-xs">
           <div className="flex items-center gap-2 font-semibold text-foreground">
             <MapPin className="h-4 w-4 text-warning" /> Tunggu di titik jemput
           </div>
           <div className="mt-1 text-muted-foreground">
-            Driver akan menunggu maksimal 5 menit. Pastikan kamu sudah berada di lokasi.
+            Driver akan menunggu maksimal 10 menit. Pastikan kamu sudah berada di lokasi.
           </div>
         </div>
 
