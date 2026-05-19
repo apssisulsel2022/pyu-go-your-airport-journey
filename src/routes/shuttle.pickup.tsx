@@ -195,7 +195,8 @@ function PickupPage() {
               <PickupMiniMap
                 lat={selected.lat}
                 lng={selected.lng}
-                className="h-20 w-28 shrink-0"
+                zoom={12}
+                className="h-28 w-36 shrink-0"
               />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-bold">{selected.name}</div>
