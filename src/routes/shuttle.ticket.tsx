@@ -1,10 +1,13 @@
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Calendar, Clock, MapPin, User, Bus, Share2, Navigation } from "lucide-react";
+import { toPng } from "html-to-image";
+import { Calendar, Clock, MapPin, User, Bus, Share2, Navigation, Download } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useBooking } from "@/store/booking";
 import { KNO_AIRPORT, formatRupiah } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/shuttle/ticket")({
   head: () => ({ meta: [{ title: "E-Ticket — PYU-GO" }] }),
