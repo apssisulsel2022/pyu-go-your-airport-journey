@@ -5,7 +5,7 @@ import { Phone, MessageCircle, Star, Bus, MapPin, Gauge, Route as RouteIcon, Clo
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { MapView } from "@/components/MapView";
-import { LivePulse } from "@/components/LivePulse";
+
 import { useBooking } from "@/store/booking";
 import { KNO_AIRPORT } from "@/lib/mock-data";
 
