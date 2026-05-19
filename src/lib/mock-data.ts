@@ -1,5 +1,6 @@
 // Mock data for PYU-GO — Phase 1 (no backend yet)
-export type VehicleType = "hiace" | "elf" | "minibus";
+export type VehicleType = "minicar" | "suv" | "hiace";
+export type VehicleTier = "Reguler" | "SemiExecutive" | "Executive";
 
 export interface PickupPoint {
   id: string;
