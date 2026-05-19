@@ -251,9 +251,12 @@ interface AdminState {
   // vehicle
   upsertVehicle: (v: VehicleTemplate) => void;
   deleteVehicle: (id: string) => void;
+  setVehicleStatus: (id: string, status: VehicleStatus) => void;
+  setVehiclePlate: (id: string, plate: string) => void;
   // schedule
   upsertSchedule: (s: AdminSchedule) => void;
   deleteSchedule: (id: string) => void;
+  toggleScheduleActive: (id: string) => void;
   // booking
   setBookingStatus: (id: string, status: BookingStatus, note?: string) => void;
   resetAll: () => void;
@@ -288,6 +291,14 @@ export const useAdmin = create<AdminState>()(
           return { vehicles: next };
         }),
       deleteVehicle: (id) => set((st) => ({ vehicles: st.vehicles.filter((v) => v.id !== id) })),
+      setVehicleStatus: (id, status) =>
+        set((st) => ({
+          vehicles: st.vehicles.map((v) => (v.id === id ? { ...v, status } : v)),
+        })),
+      setVehiclePlate: (id, plate) =>
+        set((st) => ({
+          vehicles: st.vehicles.map((v) => (v.id === id ? { ...v, plate } : v)),
+        })),
       upsertSchedule: (s) =>
         set((st) => {
           const ex = st.schedules.findIndex((x) => x.id === s.id);
@@ -297,6 +308,10 @@ export const useAdmin = create<AdminState>()(
           return { schedules: next };
         }),
       deleteSchedule: (id) => set((st) => ({ schedules: st.schedules.filter((s) => s.id !== id) })),
+      toggleScheduleActive: (id) =>
+        set((st) => ({
+          schedules: st.schedules.map((s) => (s.id === id ? { ...s, active: !s.active } : s)),
+        })),
       setBookingStatus: (id, status, note) =>
         set((st) => ({
           bookings: st.bookings.map((b) => (b.id === id ? { ...b, status, note: note ?? b.note } : b)),
@@ -304,7 +319,7 @@ export const useAdmin = create<AdminState>()(
       resetAll: () => set(buildSeed()),
     }),
     {
-      name: "pyu-admin-v2",
+      name: "pyu-admin-v3",
     },
   ),
 );
