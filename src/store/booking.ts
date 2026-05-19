@@ -1,8 +1,9 @@
 import { create } from "zustand";
-import type { PickupPoint, Schedule } from "@/lib/mock-data";
+import type { PickupPoint, Schedule, VehicleTier } from "@/lib/mock-data";
 
 interface BookingState {
   pickup: PickupPoint | null;
+  tier: VehicleTier | null;
   date: string | null; // ISO yyyy-MM-dd
   schedule: Schedule | null;
   selectedSeats: string[];
@@ -10,6 +11,7 @@ interface BookingState {
   passengerPhone: string;
   bookingCode: string | null;
   setPickup: (p: PickupPoint) => void;
+  setTier: (t: VehicleTier) => void;
   setDate: (d: string) => void;
   setSchedule: (s: Schedule) => void;
   toggleSeat: (s: string) => void;
@@ -20,6 +22,7 @@ interface BookingState {
 
 export const useBooking = create<BookingState>((set) => ({
   pickup: null,
+  tier: null,
   date: null,
   schedule: null,
   selectedSeats: [],
@@ -27,6 +30,7 @@ export const useBooking = create<BookingState>((set) => ({
   passengerPhone: "",
   bookingCode: null,
   setPickup: (p) => set({ pickup: p }),
+  setTier: (t) => set({ tier: t }),
   setDate: (d) => set({ date: d }),
   setSchedule: (s) => set({ schedule: s, selectedSeats: [] }),
   toggleSeat: (s) =>
@@ -37,5 +41,5 @@ export const useBooking = create<BookingState>((set) => ({
     })),
   setPassenger: (name, phone) => set({ passengerName: name, passengerPhone: phone }),
   setBookingCode: (c) => set({ bookingCode: c }),
-  reset: () => set({ pickup: null, date: null, schedule: null, selectedSeats: [], bookingCode: null }),
+  reset: () => set({ pickup: null, tier: null, date: null, schedule: null, selectedSeats: [], bookingCode: null }),
 }));
