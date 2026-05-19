@@ -57,10 +57,17 @@ function VehiclesPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="rounded-xl bg-muted/40 p-2">
-                <SeatLayoutGrid layout={v.layout} />
+                {v.imageUrl && v.seatMap?.length ? (
+                  <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} />
+                ) : (
+                  <SeatLayoutGrid layout={v.layout} />
+                )}
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{layoutToCounts(v.layout)} kursi • {v.rows}×{v.cols}</span>
+                <span className="text-muted-foreground">
+                  {v.imageUrl && v.seatMap?.length ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
+                  {v.imageUrl ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
+                </span>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setEditing(v)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
                   <AlertDialog>
