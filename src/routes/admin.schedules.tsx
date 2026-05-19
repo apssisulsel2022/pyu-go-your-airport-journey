@@ -81,7 +81,7 @@ function SchedulesPage() {
                   <TableHead>Pickup → KNO</TableHead>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead>Seats</TableHead>
+                  <TableHead>Seats (booked / kuota)</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -90,18 +90,26 @@ function SchedulesPage() {
                 {filtered.map((s) => {
                   const pickup = pickupPoints.find((p) => p.id === s.pickupId);
                   const veh = vehicles.find((v) => v.id === s.vehicleId);
-                  const total = seatsTotal(s.vehicleId);
+                  const capacity = seatsTotal(s.vehicleId);
+                  const quota = s.seatQuota ?? capacity;
                   const booked = bookedSeats(s.id);
+                  const ratio = quota > 0 ? booked / quota : 0;
+                  const tone = ratio >= 0.9 ? "text-destructive" : ratio >= 0.6 ? "text-amber-600" : "text-foreground";
                   return (
                     <TableRow key={s.id}>
                       <TableCell className="font-semibold">{s.departureTime} → {s.arrivalTime}</TableCell>
                       <TableCell>{pickup?.name ?? "—"}</TableCell>
                       <TableCell>
                         <div>{veh?.name ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground">{veh?.tier}</div>
+                        <div className="text-xs text-muted-foreground">{veh?.tier} • {veh?.plate}</div>
                       </TableCell>
                       <TableCell>{formatRupiah(s.price)}</TableCell>
-                      <TableCell>{booked}/{total}</TableCell>
+                      <TableCell>
+                        <div className={`font-semibold ${tone}`}>{booked} / {quota}</div>
+                        {quota !== capacity && (
+                          <div className="text-[10px] text-muted-foreground">kapasitas {capacity}</div>
+                        )}
+                      </TableCell>
                       <TableCell>{s.active ? <Badge>Active</Badge> : <Badge variant="secondary">Off</Badge>}</TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="icon" onClick={() => { setEditing(s); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
