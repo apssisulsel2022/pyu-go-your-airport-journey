@@ -20,6 +20,9 @@ import { Route as ShuttleScheduleRouteImport } from './routes/shuttle.schedule'
 import { Route as ShuttlePickupRouteImport } from './routes/shuttle.pickup'
 import { Route as ShuttlePaymentRouteImport } from './routes/shuttle.payment'
 import { Route as RideTrackingRouteImport } from './routes/ride.tracking'
+import { Route as AuthRegisterRouteImport } from './routes/auth.register'
+import { Route as AuthOtpRouteImport } from './routes/auth.otp'
+import { Route as AuthLoginRouteImport } from './routes/auth.login'
 
 const RideRoute = RideRouteImport.update({
   id: '/ride',
@@ -76,12 +79,30 @@ const RideTrackingRoute = RideTrackingRouteImport.update({
   path: '/tracking',
   getParentRoute: () => RideRoute,
 } as any)
+const AuthRegisterRoute = AuthRegisterRouteImport.update({
+  id: '/auth/register',
+  path: '/auth/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthOtpRoute = AuthOtpRouteImport.update({
+  id: '/auth/otp',
+  path: '/auth/otp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthLoginRoute = AuthLoginRouteImport.update({
+  id: '/auth/login',
+  path: '/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/bookings': typeof BookingsRoute
   '/ride': typeof RideRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/otp': typeof AuthOtpRoute
+  '/auth/register': typeof AuthRegisterRoute
   '/ride/tracking': typeof RideTrackingRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
@@ -95,6 +116,9 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/bookings': typeof BookingsRoute
   '/ride': typeof RideRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/otp': typeof AuthOtpRoute
+  '/auth/register': typeof AuthRegisterRoute
   '/ride/tracking': typeof RideTrackingRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
@@ -109,6 +133,9 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/bookings': typeof BookingsRoute
   '/ride': typeof RideRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/otp': typeof AuthOtpRoute
+  '/auth/register': typeof AuthRegisterRoute
   '/ride/tracking': typeof RideTrackingRoute
   '/shuttle/payment': typeof ShuttlePaymentRoute
   '/shuttle/pickup': typeof ShuttlePickupRoute
@@ -124,6 +151,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/bookings'
     | '/ride'
+    | '/auth/login'
+    | '/auth/otp'
+    | '/auth/register'
     | '/ride/tracking'
     | '/shuttle/payment'
     | '/shuttle/pickup'
@@ -137,6 +167,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/bookings'
     | '/ride'
+    | '/auth/login'
+    | '/auth/otp'
+    | '/auth/register'
     | '/ride/tracking'
     | '/shuttle/payment'
     | '/shuttle/pickup'
@@ -150,6 +183,9 @@ export interface FileRouteTypes {
     | '/account'
     | '/bookings'
     | '/ride'
+    | '/auth/login'
+    | '/auth/otp'
+    | '/auth/register'
     | '/ride/tracking'
     | '/shuttle/payment'
     | '/shuttle/pickup'
@@ -164,6 +200,9 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   BookingsRoute: typeof BookingsRoute
   RideRoute: typeof RideRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthOtpRoute: typeof AuthOtpRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
   ShuttlePaymentRoute: typeof ShuttlePaymentRoute
   ShuttlePickupRoute: typeof ShuttlePickupRoute
   ShuttleScheduleRoute: typeof ShuttleScheduleRoute
@@ -251,6 +290,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RideTrackingRouteImport
       parentRoute: typeof RideRoute
     }
+    '/auth/register': {
+      id: '/auth/register'
+      path: '/auth/register'
+      fullPath: '/auth/register'
+      preLoaderRoute: typeof AuthRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/otp': {
+      id: '/auth/otp'
+      path: '/auth/otp'
+      fullPath: '/auth/otp'
+      preLoaderRoute: typeof AuthOtpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -269,6 +329,9 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   BookingsRoute: BookingsRoute,
   RideRoute: RideRouteWithChildren,
+  AuthLoginRoute: AuthLoginRoute,
+  AuthOtpRoute: AuthOtpRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
   ShuttlePaymentRoute: ShuttlePaymentRoute,
   ShuttlePickupRoute: ShuttlePickupRoute,
   ShuttleScheduleRoute: ShuttleScheduleRoute,
