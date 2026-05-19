@@ -56,6 +56,17 @@ function PickupPage() {
       : [KNO_AIRPORT.lat, KNO_AIRPORT.lng];
   const mapZoom = selected ? 11 : 10;
 
+  const { data: osrm } = useOsrmRoute(
+    selected ? { lat: selected.lat, lng: selected.lng } : null,
+    selected ? { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng } : null,
+  );
+  const routePath: [number, number][] | undefined = selected
+    ? osrm?.path ?? [
+        [selected.lat, selected.lng],
+        [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
+      ]
+    : undefined;
+
   return (
     <div className="min-h-screen bg-secondary/40 pb-32">
       <PageHeader title="Pilih Titik Jemput" subtitle={`Tujuan: ${KNO_AIRPORT.name}`} />
