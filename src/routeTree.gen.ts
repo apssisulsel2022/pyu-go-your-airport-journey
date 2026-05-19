@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShuttleTrackingRouteImport } from './routes/shuttle.tracking'
+import { Route as ShuttleTicketRouteImport } from './routes/shuttle.ticket'
+import { Route as ShuttleSeatsRouteImport } from './routes/shuttle.seats'
+import { Route as ShuttleScheduleRouteImport } from './routes/shuttle.schedule'
+import { Route as ShuttlePickupRouteImport } from './routes/shuttle.pickup'
+import { Route as ShuttlePaymentRouteImport } from './routes/shuttle.payment'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShuttleTrackingRoute = ShuttleTrackingRouteImport.update({
+  id: '/shuttle/tracking',
+  path: '/shuttle/tracking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleTicketRoute = ShuttleTicketRouteImport.update({
+  id: '/shuttle/ticket',
+  path: '/shuttle/ticket',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleSeatsRoute = ShuttleSeatsRouteImport.update({
+  id: '/shuttle/seats',
+  path: '/shuttle/seats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttleScheduleRoute = ShuttleScheduleRouteImport.update({
+  id: '/shuttle/schedule',
+  path: '/shuttle/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttlePickupRoute = ShuttlePickupRouteImport.update({
+  id: '/shuttle/pickup',
+  path: '/shuttle/pickup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShuttlePaymentRoute = ShuttlePaymentRouteImport.update({
+  id: '/shuttle/payment',
+  path: '/shuttle/payment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/shuttle/payment': typeof ShuttlePaymentRoute
+  '/shuttle/pickup': typeof ShuttlePickupRoute
+  '/shuttle/schedule': typeof ShuttleScheduleRoute
+  '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/ticket': typeof ShuttleTicketRoute
+  '/shuttle/tracking': typeof ShuttleTrackingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/shuttle/payment': typeof ShuttlePaymentRoute
+  '/shuttle/pickup': typeof ShuttlePickupRoute
+  '/shuttle/schedule': typeof ShuttleScheduleRoute
+  '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/ticket': typeof ShuttleTicketRoute
+  '/shuttle/tracking': typeof ShuttleTrackingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/shuttle/payment': typeof ShuttlePaymentRoute
+  '/shuttle/pickup': typeof ShuttlePickupRoute
+  '/shuttle/schedule': typeof ShuttleScheduleRoute
+  '/shuttle/seats': typeof ShuttleSeatsRoute
+  '/shuttle/ticket': typeof ShuttleTicketRoute
+  '/shuttle/tracking': typeof ShuttleTrackingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/shuttle/payment'
+    | '/shuttle/pickup'
+    | '/shuttle/schedule'
+    | '/shuttle/seats'
+    | '/shuttle/ticket'
+    | '/shuttle/tracking'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/shuttle/payment'
+    | '/shuttle/pickup'
+    | '/shuttle/schedule'
+    | '/shuttle/seats'
+    | '/shuttle/ticket'
+    | '/shuttle/tracking'
+  id:
+    | '__root__'
+    | '/'
+    | '/shuttle/payment'
+    | '/shuttle/pickup'
+    | '/shuttle/schedule'
+    | '/shuttle/seats'
+    | '/shuttle/ticket'
+    | '/shuttle/tracking'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ShuttlePaymentRoute: typeof ShuttlePaymentRoute
+  ShuttlePickupRoute: typeof ShuttlePickupRoute
+  ShuttleScheduleRoute: typeof ShuttleScheduleRoute
+  ShuttleSeatsRoute: typeof ShuttleSeatsRoute
+  ShuttleTicketRoute: typeof ShuttleTicketRoute
+  ShuttleTrackingRoute: typeof ShuttleTrackingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,12 +130,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shuttle/tracking': {
+      id: '/shuttle/tracking'
+      path: '/shuttle/tracking'
+      fullPath: '/shuttle/tracking'
+      preLoaderRoute: typeof ShuttleTrackingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/ticket': {
+      id: '/shuttle/ticket'
+      path: '/shuttle/ticket'
+      fullPath: '/shuttle/ticket'
+      preLoaderRoute: typeof ShuttleTicketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/seats': {
+      id: '/shuttle/seats'
+      path: '/shuttle/seats'
+      fullPath: '/shuttle/seats'
+      preLoaderRoute: typeof ShuttleSeatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/schedule': {
+      id: '/shuttle/schedule'
+      path: '/shuttle/schedule'
+      fullPath: '/shuttle/schedule'
+      preLoaderRoute: typeof ShuttleScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/pickup': {
+      id: '/shuttle/pickup'
+      path: '/shuttle/pickup'
+      fullPath: '/shuttle/pickup'
+      preLoaderRoute: typeof ShuttlePickupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shuttle/payment': {
+      id: '/shuttle/payment'
+      path: '/shuttle/payment'
+      fullPath: '/shuttle/payment'
+      preLoaderRoute: typeof ShuttlePaymentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ShuttlePaymentRoute: ShuttlePaymentRoute,
+  ShuttlePickupRoute: ShuttlePickupRoute,
+  ShuttleScheduleRoute: ShuttleScheduleRoute,
+  ShuttleSeatsRoute: ShuttleSeatsRoute,
+  ShuttleTicketRoute: ShuttleTicketRoute,
+  ShuttleTrackingRoute: ShuttleTrackingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
