@@ -98,7 +98,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-const HIDE_NAV_PREFIXES = ["/auth", "/shuttle/seats", "/shuttle/payment", "/shuttle/ticket", "/shuttle/tracking", "/ride/tracking", "/admin"];
+const HIDE_NAV_PREFIXES = ["/auth", "/shuttle/pickup", "/shuttle/service", "/shuttle/schedule", "/shuttle/passenger", "/shuttle/seats", "/shuttle/payment", "/shuttle/ticket", "/shuttle/tracking", "/ride/tracking", "/admin"];
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
