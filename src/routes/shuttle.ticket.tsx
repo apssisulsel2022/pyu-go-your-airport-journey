@@ -15,11 +15,12 @@ export const Route = createFileRoute("/shuttle/ticket")({
 });
 
 function TicketPage() {
-  const { pickup, schedule, selectedSeats, bookingCode, date, passengerName, passengerPhone } =
+  const { pickup, schedule, selectedSeats, bookingCode, date, passengerName, passengerPhone, paymentTotal, promoCode, reset } =
     useBooking();
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  if (!pickup || !schedule || !bookingCode) return <Navigate to="/" />;
+  if (!pickup || !schedule || !bookingCode) return <Navigate to="/bookings" />;
+  const totalPaid = paymentTotal ?? selectedSeats.length * schedule.price;
 
   const handleDownload = async () => {
     if (!ticketRef.current) return;
