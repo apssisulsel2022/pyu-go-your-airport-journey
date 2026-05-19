@@ -18,7 +18,6 @@ function PickupPage() {
   const [rayon, setRayon] = useState<string>("Semua");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const nav = useNavigate();
-  const setPickup = useBooking((s) => s.setPickup);
 
   const rayons = ["Semua", "Rayon A", "Rayon B", "Rayon C"];
   const filtered = pickupPoints.filter(
@@ -152,13 +151,15 @@ function PickupPage() {
                   {selected.distanceKm} km • ETA {selected.etaMin} mnt ke titik
                 </div>
                 <button
-                  onClick={() => {
-                    setPickup(selected);
-                    nav({ to: "/shuttle/service" });
-                  }}
+                  onClick={() =>
+                    nav({
+                      to: "/shuttle/pickup/$pointId",
+                      params: { pointId: selected.id },
+                    })
+                  }
                   className="mt-2 w-full rounded-full bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-card"
                 >
-                  Pilih titik ini
+                  Lihat rute & detail
                 </button>
               </div>
             </div>
