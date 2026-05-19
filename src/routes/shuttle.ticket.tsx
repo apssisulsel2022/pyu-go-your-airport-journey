@@ -19,6 +19,7 @@ function TicketPage() {
     useBooking();
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const nav = useNavigate();
   if (!pickup || !schedule || !bookingCode) return <Navigate to="/bookings" />;
   const totalPaid = paymentTotal ?? selectedSeats.length * schedule.price;
 
