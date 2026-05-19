@@ -5,9 +5,11 @@ export function MapView(props: {
   zoom?: number;
   points?: { lat: number; lng: number; label?: string }[];
   route?: [number, number][];
+  traveledRoute?: [number, number][];
   className?: string;
   showPlane?: boolean;
   planePos?: [number, number];
+  vehicleEmoji?: string;
 }) {
   const [mounted, setMounted] = useState(false);
   const [Comp, setComp] = useState<React.ComponentType<any> | null>(null);
