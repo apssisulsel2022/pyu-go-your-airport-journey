@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BookingStepper } from "@/components/BookingStepper";
 import { PickupMiniMap } from "@/components/PickupMiniMap";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
-import { useBooking } from "@/store/booking";
+
 
 export const Route = createFileRoute("/shuttle/pickup")({
   head: () => ({ meta: [{ title: "Pilih Titik Jemput — PYU-GO" }] }),
