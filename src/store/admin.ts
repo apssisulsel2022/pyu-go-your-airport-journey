@@ -5,8 +5,10 @@ import {
   getSchedulesForPickup,
   type PickupPoint,
   type VehicleType,
+  type VehicleTier,
 } from "@/lib/mock-data";
 
+// Legacy grid cell — kept for backward compatibility with SeatLayoutGrid.
 export type SeatCell =
   | { kind: "seat"; label: string }
   | { kind: "aisle" }
@@ -28,19 +30,31 @@ export interface VehicleTemplate {
   name: string;
   type: VehicleType;
   plate: string;
-  className: "Economy" | "Business" | "VIP";
-  rows: number;
-  cols: number;
-  layout: SeatCell[][];
+  tier: VehicleTier;
   imageUrl?: string;
   seatMap?: SeatMarker[];
 }
 
+export const TIER_ORDER: VehicleTier[] = ["Reguler", "SemiExecutive", "Executive"];
+export const TYPE_LABEL: Record<VehicleType, string> = {
+  minicar: "Minicar",
+  suv: "SUV",
+  hiace: "Hiace",
+};
+export const TIER_LABEL: Record<VehicleTier, string> = {
+  Reguler: "Reguler",
+  SemiExecutive: "Semi Executive",
+  Executive: "Executive",
+};
+export const DEFAULT_CAPACITY: Record<VehicleType, number> = {
+  minicar: 6,
+  suv: 7,
+  hiace: 12,
+};
+
 export const countSeatsInMap = (markers: SeatMarker[] | undefined) =>
   (markers ?? []).filter((m) => m.kind === "seat").length;
 
-// Row-bucketed renumber: group seats whose Y differ by < ROW_GAP, sort
-// each bucket left-to-right, then number top-to-bottom.
 export const renumberSeatMap = (markers: SeatMarker[], rowGap = 0.06): SeatMarker[] => {
   const seats = markers
     .filter((m) => m.kind === "seat")
@@ -59,10 +73,22 @@ export const renumberSeatMap = (markers: SeatMarker[], rowGap = 0.06): SeatMarke
   }
   return markers.map((m) => {
     if (m.kind === "seat") return { ...m, label: String(idx.get(m.id)) };
-    // Strip stale labels from non-seat markers.
     const { label: _label, ...rest } = m;
     return rest;
   });
+};
+
+// Legacy helpers (used by SeatLayoutGrid in other places).
+export const layoutToCounts = (layout: SeatCell[][]) => {
+  let seats = 0;
+  layout.forEach((r) => r.forEach((c) => c.kind === "seat" && seats++));
+  return seats;
+};
+export const renumberLayout = (layout: SeatCell[][]): SeatCell[][] => {
+  let i = 1;
+  return layout.map((row) =>
+    row.map((cell) => (cell.kind === "seat" ? { kind: "seat" as const, label: String(i++) } : cell)),
+  );
 };
 
 export interface AdminSchedule {
@@ -91,87 +117,68 @@ export interface AdminBooking {
   note?: string;
 }
 
-const defaultLayouts: Record<VehicleType, string[][]> = {
-  hiace: [
-    ["D", "_", "_", "_"],
-    ["1", "2", "A", "3"],
-    ["4", "5", "A", "6"],
-    ["7", "8", "A", "9"],
-    ["10", "11", "12", "_"],
-  ],
-  elf: [
-    ["D", "_", "_", "_"],
-    ["1", "2", "A", "3"],
-    ["4", "5", "A", "6"],
-    ["7", "8", "A", "9"],
-    ["10", "11", "A", "12"],
-    ["13", "14", "15", "16"],
-  ],
-  minibus: [
-    ["D", "_", "_", "_", "_"],
-    ["1", "2", "A", "3", "4"],
-    ["5", "6", "A", "7", "8"],
-    ["9", "10", "A", "11", "12"],
-    ["13", "14", "A", "15", "16"],
-    ["17", "18", "19", "20", "_"],
-  ],
+const VEHICLE_NAMES: Record<VehicleType, Record<VehicleTier, string>> = {
+  minicar: {
+    Reguler: "Toyota Avanza",
+    SemiExecutive: "Honda Mobilio",
+    Executive: "Toyota Veloz",
+  },
+  suv: {
+    Reguler: "Mitsubishi Xpander",
+    SemiExecutive: "Toyota Innova",
+    Executive: "Toyota Fortuner",
+  },
+  hiace: {
+    Reguler: "Toyota Hiace Commuter",
+    SemiExecutive: "Toyota Hiace Premio",
+    Executive: "Toyota Hiace Executive",
+  },
 };
 
-const stringsToLayout = (rows: string[][]): SeatCell[][] =>
-  rows.map((row) =>
-    row.map<SeatCell>((c) => {
-      if (c === "D") return { kind: "driver" };
-      if (c === "A") return { kind: "aisle" };
-      if (c === "_" || c === "") return { kind: "empty" };
-      return { kind: "seat", label: c };
-    }),
-  );
-
-export const layoutToCounts = (layout: SeatCell[][]) => {
-  let seats = 0;
-  layout.forEach((r) => r.forEach((c) => c.kind === "seat" && seats++));
-  return seats;
+// Build a simple default seatMap (column-pairs over rows) so cards aren't empty
+// before admin uploads a real floor-plan image.
+const defaultSeatMap = (type: VehicleType): SeatMarker[] => {
+  const cap = DEFAULT_CAPACITY[type];
+  const out: SeatMarker[] = [
+    { id: "driver", x: 0.22, y: 0.12, kind: "driver" },
+    { id: "door", x: 0.78, y: 0.12, kind: "door" },
+  ];
+  const cols = type === "hiace" ? 3 : 2;
+  const rows = Math.ceil(cap / cols);
+  let n = 1;
+  for (let r = 0; r < rows && n <= cap; r++) {
+    for (let c = 0; c < cols && n <= cap; c++) {
+      out.push({
+        id: `s-${n}`,
+        x: 0.22 + (c * 0.56) / Math.max(cols - 1, 1),
+        y: 0.3 + (r * 0.6) / Math.max(rows - 1, 1),
+        kind: "seat",
+        label: String(n),
+      });
+      n++;
+    }
+  }
+  return out;
 };
 
-export const renumberLayout = (layout: SeatCell[][]): SeatCell[][] => {
-  let i = 1;
-  return layout.map((row) =>
-    row.map((cell) => (cell.kind === "seat" ? { kind: "seat" as const, label: String(i++) } : cell)),
-  );
+const seedVehicles = (): VehicleTemplate[] => {
+  const plates = ["BK 1101 GO", "BK 1102 GO", "BK 1103 GO", "BK 2201 GO", "BK 2202 GO", "BK 2203 GO", "BK 3301 GO", "BK 3302 GO", "BK 3303 GO"];
+  let i = 0;
+  const out: VehicleTemplate[] = [];
+  (["minicar", "suv", "hiace"] as VehicleType[]).forEach((type) => {
+    TIER_ORDER.forEach((tier) => {
+      out.push({
+        id: `v-${type}-${tier.toLowerCase()}`,
+        name: VEHICLE_NAMES[type][tier],
+        type,
+        tier,
+        plate: plates[i++] ?? "BK 0000 GO",
+        seatMap: defaultSeatMap(type),
+      });
+    });
+  });
+  return out;
 };
-
-const seedVehicles = (): VehicleTemplate[] => [
-  {
-    id: "v-hiace-1",
-    name: "Toyota Hiace Premio",
-    type: "hiace",
-    plate: "BK 1234 GO",
-    className: "Business",
-    rows: 5,
-    cols: 4,
-    layout: stringsToLayout(defaultLayouts.hiace),
-  },
-  {
-    id: "v-elf-1",
-    name: "Isuzu Elf Long",
-    type: "elf",
-    plate: "BK 4567 GO",
-    className: "Economy",
-    rows: 6,
-    cols: 4,
-    layout: stringsToLayout(defaultLayouts.elf),
-  },
-  {
-    id: "v-minibus-1",
-    name: "Mitsubishi Minibus",
-    type: "minibus",
-    plate: "BK 2345 GO",
-    className: "VIP",
-    rows: 6,
-    cols: 5,
-    layout: stringsToLayout(defaultLayouts.minibus),
-  },
-];
 
 const seedSchedules = (vehicles: VehicleTemplate[]): AdminSchedule[] => {
   const out: AdminSchedule[] = [];
