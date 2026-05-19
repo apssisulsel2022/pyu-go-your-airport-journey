@@ -190,6 +190,15 @@ function TicketPage() {
             <Navigation className="h-4 w-4" /> Lacak Shuttle
           </Link>
         </div>
+        <button
+          onClick={() => {
+            reset();
+            nav({ to: "/shuttle/pickup" });
+          }}
+          className="w-full rounded-full border border-white/30 bg-transparent py-2.5 text-xs font-semibold text-primary-foreground"
+        >
+          Pesan perjalanan lain
+        </button>
       </div>
 
       <div className="mt-4 text-center text-xs text-primary-foreground/80">
