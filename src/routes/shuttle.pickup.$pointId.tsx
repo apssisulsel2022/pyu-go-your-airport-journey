@@ -108,7 +108,7 @@ function PickupRoutePreview() {
         >
           <MapView
             center={center}
-            zoom={10}
+            zoom={11}
             className="h-64 w-full"
             points={[
               { lat: point.lat, lng: point.lng, label: point.name },
