@@ -194,7 +194,14 @@ function PaymentPage() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-semibold">{m.label}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{m.label}</span>
+                      {m.id === "ewallet" && ewalletShort && (
+                        <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-destructive">
+                          Saldo kurang
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">{m.subtitle}</div>
                   </div>
                   <span
