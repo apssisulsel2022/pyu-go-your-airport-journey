@@ -14,6 +14,14 @@ export type SeatCell =
   | { kind: "door" }
   | { kind: "empty" };
 
+export interface SeatMarker {
+  id: string;
+  x: number; // 0..1 relative to image width
+  y: number; // 0..1 relative to image height
+  kind: "seat" | "driver" | "door";
+  label?: string;
+}
+
 export interface VehicleTemplate {
   id: string;
   name: string;
@@ -23,7 +31,22 @@ export interface VehicleTemplate {
   rows: number;
   cols: number;
   layout: SeatCell[][];
+  imageUrl?: string;
+  seatMap?: SeatMarker[];
 }
+
+export const countSeatsInMap = (markers: SeatMarker[] | undefined) =>
+  (markers ?? []).filter((m) => m.kind === "seat").length;
+
+export const renumberSeatMap = (markers: SeatMarker[]): SeatMarker[] => {
+  const seats = markers
+    .filter((m) => m.kind === "seat")
+    .slice()
+    .sort((a, b) => (a.y - b.y) * 1000 + (a.x - b.x));
+  const idx = new Map<string, number>();
+  seats.forEach((m, i) => idx.set(m.id, i + 1));
+  return markers.map((m) => (m.kind === "seat" ? { ...m, label: String(idx.get(m.id)) } : m));
+};
 
 export interface AdminSchedule {
   id: string;
