@@ -106,16 +106,25 @@ function TicketPage() {
         </div>
       </motion.div>
 
-      <div className="mt-4 flex gap-2 px-4">
-        <button className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-sm font-semibold text-primary-foreground backdrop-blur">
-          <Share2 className="h-4 w-4" /> Bagikan
-        </button>
-        <Link
-          to="/shuttle/tracking"
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-bold text-primary shadow-card"
+      <div className="mt-4 space-y-2 px-4">
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-white py-3 text-sm font-bold text-primary shadow-card disabled:opacity-60"
         >
-          <Navigation className="h-4 w-4" /> Lacak Shuttle
-        </Link>
+          <Download className="h-4 w-4" /> {downloading ? "Menyiapkan..." : "Download E-Ticket"}
+        </button>
+        <div className="flex gap-2">
+          <button className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-sm font-semibold text-primary-foreground backdrop-blur">
+            <Share2 className="h-4 w-4" /> Bagikan
+          </button>
+          <Link
+            to="/shuttle/tracking"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-white/15 py-3 text-sm font-semibold text-primary-foreground backdrop-blur"
+          >
+            <Navigation className="h-4 w-4" /> Lacak Shuttle
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4 text-center text-xs text-primary-foreground/80">
