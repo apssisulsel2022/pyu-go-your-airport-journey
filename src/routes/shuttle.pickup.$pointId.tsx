@@ -54,7 +54,13 @@ function PickupRoutePreview() {
 
   if (!point) throw notFound();
 
-  const estimasiMnt = Math.round(point.distanceKm * 2.5 + 30);
+  const { data: osrm, isLoading: osrmLoading } = useOsrmRoute(
+    { lat: point.lat, lng: point.lng },
+    { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng },
+  );
+
+  const distanceKm = osrm ? Number(osrm.distanceKm.toFixed(1)) : point.distanceKm;
+  const estimasiMnt = osrm ? Math.round(osrm.durationMin) : Math.round(point.distanceKm * 2.5 + 30);
   const arriveAt = new Date(Date.now() + (point.etaMin + estimasiMnt) * 60000);
   const arriveLabel = arriveAt.toLocaleTimeString("id-ID", {
     hour: "2-digit",
@@ -65,6 +71,11 @@ function PickupRoutePreview() {
   const center: [number, number] = [
     (point.lat + KNO_AIRPORT.lat) / 2,
     (point.lng + KNO_AIRPORT.lng) / 2,
+  ];
+
+  const routePath: [number, number][] = osrm?.path ?? [
+    [point.lat, point.lng],
+    [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
   ];
 
   const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${point.lat},${point.lng}&destination=${KNO_AIRPORT.lat},${KNO_AIRPORT.lng}&travelmode=driving`;
