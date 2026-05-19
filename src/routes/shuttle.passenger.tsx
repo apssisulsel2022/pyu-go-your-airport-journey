@@ -102,6 +102,11 @@ function PassengerPage() {
                 Format nomor tidak valid (10–16 digit)
               </span>
             )}
+            {!(touched && !phoneOk) && (
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                Format: 08xx atau +628xx
+              </span>
+            )}
           </label>
         </div>
 
