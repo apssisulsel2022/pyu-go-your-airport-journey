@@ -4,17 +4,26 @@ import { Car, DoorOpen } from "lucide-react";
 import { SeatGlyph } from "./SeatGlyph";
 
 interface Props {
-  imageUrl: string;
+  imageUrl?: string;
   markers: SeatMarker[];
   selected?: string[];
   booked?: string[];
   onToggle?: (label: string) => void;
+  aspectRatio?: number; // used when imageUrl is missing (default 3/4 portrait-ish)
 }
 
-export function SeatImageMap({ imageUrl, markers, selected = [], booked = [], onToggle }: Props) {
+export function SeatImageMap({ imageUrl, markers, selected = [], booked = [], onToggle, aspectRatio = 3 / 4 }: Props) {
   return (
     <div className="relative w-full overflow-hidden rounded-2xl border-2 border-border bg-card">
-      <img src={imageUrl} alt="Denah kursi" className="block h-auto w-full" draggable={false} />
+      {imageUrl ? (
+        <img src={imageUrl} alt="Denah kursi" className="block h-auto w-full" draggable={false} />
+      ) : (
+        <div
+          aria-hidden
+          className="w-full bg-gradient-to-b from-muted/60 to-muted/20"
+          style={{ aspectRatio: `${aspectRatio}` }}
+        />
+      )}
       {markers.map((m) => {
         if (m.kind === "driver") {
           return (
