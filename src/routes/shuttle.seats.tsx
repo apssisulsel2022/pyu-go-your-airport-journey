@@ -1,6 +1,7 @@
 import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/PageHeader";
+import { BookingStepper } from "@/components/BookingStepper";
 import { SeatPicker } from "@/components/SeatPicker";
 import { SeatImageMap } from "@/components/admin/SeatImageMap";
 import { useBooking } from "@/store/booking";
