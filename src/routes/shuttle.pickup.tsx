@@ -200,7 +200,9 @@ function PickupPage() {
             <div className="min-w-0">
               <div className="truncate text-sm font-bold">{selected.name}</div>
               <div className="truncate text-[11px] text-muted-foreground">
-                {selected.distanceKm} km • ETA {selected.etaMin} mnt ke titik
+                {osrm
+                  ? `${osrm.distanceKm.toFixed(1)} km • ${Math.round(osrm.durationMin)} mnt via jalan`
+                  : `${selected.distanceKm} km • ETA ${selected.etaMin} mnt ke titik`}
               </div>
               <div className="mt-2 flex gap-2">
                 <button
