@@ -1,15 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useAdmin, renumberLayout, layoutToCounts, type VehicleTemplate, type SeatCell } from "@/store/admin";
+import { useAdmin, renumberLayout, layoutToCounts, countSeatsInMap, type VehicleTemplate, type SeatCell } from "@/store/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Pencil, Trash2, RotateCw } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Plus, Pencil, Trash2, RotateCw, Image as ImageIcon } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { SeatLayoutGrid } from "@/components/admin/SeatLayoutGrid";
+import { SeatImageEditor } from "@/components/admin/SeatImageEditor";
+import { SeatImageMap } from "@/components/admin/SeatImageMap";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -54,10 +57,17 @@ function VehiclesPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="rounded-xl bg-muted/40 p-2">
-                <SeatLayoutGrid layout={v.layout} />
+                {v.imageUrl && v.seatMap?.length ? (
+                  <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} />
+                ) : (
+                  <SeatLayoutGrid layout={v.layout} />
+                )}
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{layoutToCounts(v.layout)} kursi • {v.rows}×{v.cols}</span>
+                <span className="text-muted-foreground">
+                  {v.imageUrl && v.seatMap?.length ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
+                  {v.imageUrl ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
+                </span>
                 <div className="flex gap-1">
                   <Button size="sm" variant="ghost" onClick={() => setEditing(v)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
                   <AlertDialog>
@@ -152,20 +162,46 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
         </div>
 
         <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-sm font-semibold">Layout editor</div>
-            <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
-              <RotateCw className="mr-1 h-3.5 w-3.5" /> Renumber
-            </Button>
-          </div>
-          <p className="mb-2 text-xs text-muted-foreground">Klik tiap sel untuk siklus: kursi → lorong → sopir → pintu → kosong.</p>
-          <SeatLayoutGrid layout={v.layout} editable onChange={(layout) => setV({ ...v, layout })} />
-          <div className="mt-2 text-xs text-muted-foreground">Total kursi: {layoutToCounts(v.layout)}</div>
+          <Tabs defaultValue={v.imageUrl ? "image" : "grid"} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="image"><ImageIcon className="mr-1 h-3.5 w-3.5" /> Image map</TabsTrigger>
+              <TabsTrigger value="grid">Grid</TabsTrigger>
+            </TabsList>
+            <TabsContent value="image" className="mt-3">
+              <SeatImageEditor
+                imageUrl={v.imageUrl}
+                markers={v.seatMap ?? []}
+                onImageChange={(url) => setV({ ...v, imageUrl: url })}
+                onMarkersChange={(seatMap) => setV({ ...v, seatMap })}
+              />
+            </TabsContent>
+            <TabsContent value="grid" className="mt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-sm font-semibold">Grid layout</div>
+                <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
+                  <RotateCw className="mr-1 h-3.5 w-3.5" /> Renumber
+                </Button>
+              </div>
+              <p className="mb-2 text-xs text-muted-foreground">Klik tiap sel untuk siklus: kursi → lorong → sopir → pintu → kosong.</p>
+              <SeatLayoutGrid layout={v.layout} editable onChange={(layout) => setV({ ...v, layout })} />
+              <div className="mt-2 text-xs text-muted-foreground">Total kursi: {layoutToCounts(v.layout)}</div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         <SheetFooter className="mt-5">
           <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={() => onSave({ ...v, layout: renumberLayout(v.layout) })}>Simpan</Button>
+          <Button
+            onClick={() =>
+              onSave({
+                ...v,
+                layout: renumberLayout(v.layout),
+                seatMap: v.seatMap ? v.seatMap : undefined,
+              })
+            }
+          >
+            Simpan
+          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
