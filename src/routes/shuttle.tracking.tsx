@@ -8,6 +8,7 @@ import { MapView } from "@/components/MapView";
 
 import { useBooking } from "@/store/booking";
 import { KNO_AIRPORT } from "@/lib/mock-data";
+import { useOsrmRoute } from "@/hooks/use-osrm-route";
 
 export const Route = createFileRoute("/shuttle/tracking")({
   head: () => ({ meta: [{ title: "Lacak Shuttle — PYU-GO" }] }),
@@ -77,6 +78,16 @@ function TrackingPage() {
     return [pickup.lat - 0.018, pickup.lng - 0.014];
   }, [pickup]);
 
+  // Real road route: driver→pickup and pickup→KNO
+  const { data: legToPickup } = useOsrmRoute(
+    driverStart ? { lat: driverStart[0], lng: driverStart[1] } : null,
+    pickup ? { lat: pickup.lat, lng: pickup.lng } : null,
+  );
+  const { data: legToAirport } = useOsrmRoute(
+    pickup ? { lat: pickup.lat, lng: pickup.lng } : null,
+    { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng },
+  );
+
   // rAF loop for smooth progress
   useEffect(() => {
     let raf = 0;
@@ -132,14 +143,25 @@ function TrackingPage() {
     currentPos = airportPos;
   }
 
-  // Distances
+  // Distances — prefer real road distance from OSRM when available
+  const pickupToAirportKm = legToAirport?.distanceKm ?? haversineKm(pickupPos, airportPos);
+  const driverToPickupKm = legToPickup?.distanceKm ?? haversineKm(driverStart, pickupPos);
+  const toPickupRatio =
+    phase === "to_pickup"
+      ? Math.max(0, Math.min(1, 1 - progress / P_PICKUP))
+      : 1;
+  const toAirportRatio =
+    phase === "to_airport"
+      ? Math.max(0, Math.min(1, 1 - (progress - P_BOARD_END) / (1 - P_BOARD_END)))
+      : 1;
+
   const remainingKm =
     phase === "to_pickup" || phase === "scheduled"
-      ? haversineKm(currentPos, pickupPos) + haversineKm(pickupPos, airportPos)
+      ? driverToPickupKm * toPickupRatio + pickupToAirportKm
       : phase === "boarding"
-        ? haversineKm(pickupPos, airportPos)
+        ? pickupToAirportKm
         : phase === "to_airport"
-          ? haversineKm(currentPos, airportPos)
+          ? pickupToAirportKm * toAirportRatio
           : 0;
 
   // ETA from remaining distance & current speed (more "alive" than simulation timer)
@@ -151,18 +173,16 @@ function TrackingPage() {
   const etaRemSec = etaSec % 60;
   const arrivalTime = new Date(now + etaSec * 1000);
 
-  const traveledRoute: LatLng[] =
-    phase === "scheduled"
-      ? [driverStart]
-      : phase === "to_pickup"
-        ? [driverStart, currentPos]
-        : phase === "boarding"
-          ? [driverStart, pickupPos]
-          : phase === "to_airport"
-            ? [driverStart, pickupPos, currentPos]
-            : [driverStart, pickupPos, airportPos];
+  // Full route drawn on the map — follow roads when OSRM is available
+  const fullRoute: LatLng[] = [
+    ...(legToPickup?.path ?? [driverStart, pickupPos]),
+    ...(legToAirport?.path ?? [pickupPos, airportPos]),
+  ];
 
-  const fullRoute: LatLng[] = [driverStart, pickupPos, airportPos];
+  // Traveled segment — simple progress-based slice along the full route
+  const traveledCount = Math.max(1, Math.round(fullRoute.length * progress));
+  const traveledRoute: LatLng[] =
+    phase === "scheduled" ? [driverStart] : fullRoute.slice(0, traveledCount);
 
   const phaseHeadline: Record<Phase, string> = {
     scheduled: "Armada dijadwalkan",

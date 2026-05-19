@@ -15,6 +15,7 @@ import { MapView } from "@/components/MapView";
 import { BookingStepper } from "@/components/BookingStepper";
 import { KNO_AIRPORT, pickupPoints } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
+import { useOsrmRoute } from "@/hooks/use-osrm-route";
 
 export const Route = createFileRoute("/shuttle/pickup/$pointId")({
   head: () => ({ meta: [{ title: "Rute ke KNO — PYU-GO" }] }),
@@ -53,7 +54,13 @@ function PickupRoutePreview() {
 
   if (!point) throw notFound();
 
-  const estimasiMnt = Math.round(point.distanceKm * 2.5 + 30);
+  const { data: osrm, isLoading: osrmLoading } = useOsrmRoute(
+    { lat: point.lat, lng: point.lng },
+    { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng },
+  );
+
+  const distanceKm = osrm ? Number(osrm.distanceKm.toFixed(1)) : point.distanceKm;
+  const estimasiMnt = osrm ? Math.round(osrm.durationMin) : Math.round(point.distanceKm * 2.5 + 30);
   const arriveAt = new Date(Date.now() + (point.etaMin + estimasiMnt) * 60000);
   const arriveLabel = arriveAt.toLocaleTimeString("id-ID", {
     hour: "2-digit",
@@ -64,6 +71,11 @@ function PickupRoutePreview() {
   const center: [number, number] = [
     (point.lat + KNO_AIRPORT.lat) / 2,
     (point.lng + KNO_AIRPORT.lng) / 2,
+  ];
+
+  const routePath: [number, number][] = osrm?.path ?? [
+    [point.lat, point.lng],
+    [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
   ];
 
   const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${point.lat},${point.lng}&destination=${KNO_AIRPORT.lat},${KNO_AIRPORT.lng}&travelmode=driving`;
@@ -98,10 +110,7 @@ function PickupRoutePreview() {
               { lat: point.lat, lng: point.lng, label: point.name },
               { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng, label: "KNO" },
             ]}
-            route={[
-              [point.lat, point.lng],
-              [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
-            ]}
+            route={routePath}
             showPlane
             planePos={[KNO_AIRPORT.lat, KNO_AIRPORT.lng]}
             vehicleEmoji="✈️"
@@ -147,9 +156,9 @@ function PickupRoutePreview() {
         <div className="grid grid-cols-2 gap-2">
           <Metric
             icon={<Ruler className="h-3.5 w-3.5" />}
-            label="Jarak titik"
-            value={`${point.distanceKm} km`}
-            sub="dari pusat kota"
+            label="Jarak ke KNO"
+            value={`${distanceKm} km`}
+            sub={osrm ? "via jalan" : osrmLoading ? "menghitung…" : "estimasi"}
           />
           <Metric
             icon={<Clock className="h-3.5 w-3.5" />}

@@ -7,6 +7,7 @@ import { BookingStepper } from "@/components/BookingStepper";
 import { MapView } from "@/components/MapView";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
+import { useOsrmRoute } from "@/hooks/use-osrm-route";
 
 
 export const Route = createFileRoute("/shuttle/pickup")({
@@ -55,6 +56,17 @@ function PickupPage() {
       : [KNO_AIRPORT.lat, KNO_AIRPORT.lng];
   const mapZoom = selected ? 11 : 10;
 
+  const { data: osrm } = useOsrmRoute(
+    selected ? { lat: selected.lat, lng: selected.lng } : null,
+    selected ? { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng } : null,
+  );
+  const routePath: [number, number][] | undefined = selected
+    ? osrm?.path ?? [
+        [selected.lat, selected.lng],
+        [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
+      ]
+    : undefined;
+
   return (
     <div className="min-h-screen bg-secondary/40 pb-32">
       <PageHeader title="Pilih Titik Jemput" subtitle={`Tujuan: ${KNO_AIRPORT.name}`} />
@@ -70,14 +82,7 @@ function PickupPage() {
             points={mapPoints}
             airportIndex={airportIdx}
             highlightIndex={highlightIdx}
-            route={
-              selected
-                ? [
-                    [selected.lat, selected.lng],
-                    [KNO_AIRPORT.lat, KNO_AIRPORT.lng],
-                  ]
-                : undefined
-            }
+            route={routePath}
             onPointClick={(i) => {
               if (i < filtered.length) setSelectedId(filtered[i].id);
             }}
@@ -195,7 +200,9 @@ function PickupPage() {
             <div className="min-w-0">
               <div className="truncate text-sm font-bold">{selected.name}</div>
               <div className="truncate text-[11px] text-muted-foreground">
-                {selected.distanceKm} km • ETA {selected.etaMin} mnt ke titik
+                {osrm
+                  ? `${osrm.distanceKm.toFixed(1)} km • ${Math.round(osrm.durationMin)} mnt via jalan`
+                  : `${selected.distanceKm} km • ETA ${selected.etaMin} mnt ke titik`}
               </div>
               <div className="mt-2 flex gap-2">
                 <button
