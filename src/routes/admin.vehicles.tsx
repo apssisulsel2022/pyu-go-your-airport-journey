@@ -1,16 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useAdmin, renumberLayout, layoutToCounts, countSeatsInMap, type VehicleTemplate, type SeatCell } from "@/store/admin";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useAdmin,
+  countSeatsInMap,
+  renumberSeatMap,
+  TIER_ORDER,
+  TIER_LABEL,
+  TYPE_LABEL,
+  DEFAULT_CAPACITY,
+  type VehicleTemplate,
+  type SeatMarker,
+} from "@/store/admin";
+import type { VehicleType, VehicleTier } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, RotateCw, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Image as ImageIcon, Armchair } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { SeatLayoutGrid } from "@/components/admin/SeatLayoutGrid";
 import { SeatImageEditor } from "@/components/admin/SeatImageEditor";
 import { SeatImageMap } from "@/components/admin/SeatImageMap";
 import { Badge } from "@/components/ui/badge";
@@ -22,75 +31,97 @@ export const Route = createFileRoute("/admin/vehicles")({
 
 const emptyVehicle = (): VehicleTemplate => ({
   id: "v-" + Date.now(),
-  name: "New Vehicle",
-  type: "hiace",
+  name: "Kendaraan Baru",
+  type: "minicar",
   plate: "BK 0000 GO",
-  className: "Economy",
-  rows: 4,
-  cols: 4,
-  layout: Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ kind: "empty" } as SeatCell))),
+  tier: "Reguler",
+  seatMap: [],
 });
+
+const TIER_TONE: Record<VehicleTier, string> = {
+  Reguler: "bg-muted text-muted-foreground",
+  SemiExecutive: "bg-primary/15 text-primary",
+  Executive: "bg-amber-400/20 text-amber-700 dark:text-amber-300",
+};
 
 function VehiclesPage() {
   const { vehicles, upsertVehicle, deleteVehicle } = useAdmin();
   const [editing, setEditing] = useState<VehicleTemplate | null>(null);
+  const [typeFilter, setTypeFilter] = useState<"all" | VehicleType>("all");
+  const [tierFilter, setTierFilter] = useState<"all" | VehicleTier>("all");
+
+  const filtered = useMemo(
+    () =>
+      vehicles.filter(
+        (v) => (typeFilter === "all" || v.type === typeFilter) && (tierFilter === "all" || v.tier === tierFilter),
+      ),
+    [vehicles, typeFilter, tierFilter],
+  );
+
+  const grouped = useMemo(() => {
+    const m = new Map<VehicleTier, VehicleTemplate[]>();
+    TIER_ORDER.forEach((t) => m.set(t, []));
+    filtered.forEach((v) => m.get(v.tier)?.push(v));
+    return m;
+  }, [filtered]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Vehicles</h1>
-          <p className="text-sm text-muted-foreground">Kelola kendaraan dan layout kursinya.</p>
+          <p className="text-sm text-muted-foreground">3 jenis kendaraan · 3 tier layanan · denah kursi realistis.</p>
         </div>
-        <Button onClick={() => setEditing(emptyVehicle())}><Plus className="mr-1 h-4 w-4" /> Add vehicle</Button>
+        <Button onClick={() => setEditing(emptyVehicle())}>
+          <Plus className="mr-1 h-4 w-4" /> Add vehicle
+        </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {vehicles.map((v) => (
-          <Card key={v.id} className="overflow-hidden">
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-              <div>
-                <CardTitle className="text-base">{v.name}</CardTitle>
-                <div className="text-xs text-muted-foreground">{v.plate}</div>
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-2 p-3">
+          <span className="text-xs font-medium text-muted-foreground">Filter:</span>
+          <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as typeof typeFilter)}>
+            <SelectTrigger className="h-8 w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua jenis</SelectItem>
+              <SelectItem value="minicar">Minicar</SelectItem>
+              <SelectItem value="suv">SUV</SelectItem>
+              <SelectItem value="hiace">Hiace</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={tierFilter} onValueChange={(v) => setTierFilter(v as typeof tierFilter)}>
+            <SelectTrigger className="h-8 w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua tier</SelectItem>
+              {TIER_ORDER.map((t) => (
+                <SelectItem key={t} value={t}>{TIER_LABEL[t]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {TIER_ORDER.map((tier) => {
+        const list = grouped.get(tier) ?? [];
+        if (tierFilter !== "all" && tierFilter !== tier) return null;
+        return (
+          <section key={tier} className="space-y-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold tracking-tight">{TIER_LABEL[tier]}</h2>
+              <Badge variant="outline" className="text-xs">{list.length}</Badge>
+            </div>
+            {list.length === 0 ? (
+              <Card><CardContent className="p-6 text-center text-sm text-muted-foreground">Belum ada kendaraan {TIER_LABEL[tier]}.</CardContent></Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {list.map((v) => (
+                  <VehicleCard key={v.id} v={v} onEdit={() => setEditing(v)} onDelete={() => { deleteVehicle(v.id); toast.success("Kendaraan dihapus"); }} />
+                ))}
               </div>
-              <Badge variant="outline">{v.className}</Badge>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="rounded-xl bg-muted/40 p-2">
-                {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? (
-                  <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} />
-                ) : (
-                  <SeatLayoutGrid layout={v.layout} />
-                )}
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
-                  {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? countSeatsInMap(v.seatMap) : layoutToCounts(v.layout)} kursi
-                  {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? <> • <ImageIcon className="ml-0.5 inline h-3 w-3" /> denah</> : <> • {v.rows}×{v.cols}</>}
-                </span>
-                <div className="flex gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(v)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus kendaraan?</AlertDialogTitle>
-                        <AlertDialogDescription>Jadwal yang memakai kendaraan ini bisa rusak.</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => { deleteVehicle(v.id); toast.success("Kendaraan dihapus"); }}>Hapus</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            )}
+          </section>
+        );
+      })}
 
       <VehicleEditor
         value={editing}
@@ -101,25 +132,74 @@ function VehiclesPage() {
   );
 }
 
+function VehicleCard({ v, onEdit, onDelete }: { v: VehicleTemplate; onEdit: () => void; onDelete: () => void }) {
+  const seatCount = countSeatsInMap(v.seatMap);
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div className="min-w-0">
+          <CardTitle className="truncate text-base">{v.name}</CardTitle>
+          <div className="text-xs text-muted-foreground">{v.plate}</div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Badge variant="outline">{TYPE_LABEL[v.type]}</Badge>
+          <Badge className={TIER_TONE[v.tier]} variant="secondary">{TIER_LABEL[v.tier]}</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="rounded-xl bg-muted/40 p-2">
+          {v.imageUrl && v.seatMap && v.seatMap.length > 0 ? (
+            <SeatImageMap imageUrl={v.imageUrl} markers={v.seatMap} />
+          ) : (
+            <div className="flex h-32 flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+              <ImageIcon className="h-5 w-5" />
+              Belum ada denah — klik Edit untuk upload.
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <Armchair className="h-3.5 w-3.5" /> {seatCount} kursi
+          </span>
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" onClick={onEdit}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hapus kendaraan?</AlertDialogTitle>
+                  <AlertDialogDescription>Jadwal yang memakai kendaraan ini bisa rusak.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={onDelete}>Hapus</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | null; onClose: () => void; onSave: (v: VehicleTemplate) => void }) {
   const [v, setV] = useState<VehicleTemplate | null>(value);
   useEffect(() => setV(value), [value]);
 
   if (!v) return null;
-
-  const resize = (rows: number, cols: number) => {
-    const layout: SeatCell[][] = Array.from({ length: rows }, (_, r) =>
-      Array.from({ length: cols }, (_, c) => (v.layout[r]?.[c] ?? { kind: "empty" } as SeatCell)),
-    );
-    setV({ ...v, rows, cols, layout });
-  };
+  const seatCount = countSeatsInMap(v.seatMap);
+  const canSave = !!v.imageUrl && seatCount > 0 && v.name.trim().length > 0;
 
   return (
     <Sheet open={!!value} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Edit kendaraan & layout kursi</SheetTitle>
+          <SheetTitle>Edit kendaraan & denah kursi</SheetTitle>
         </SheetHeader>
+
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label className="mb-1 block text-xs">Nama</Label>
@@ -130,84 +210,67 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
             <Input value={v.plate} onChange={(e) => setV({ ...v, plate: e.target.value })} />
           </div>
           <div>
-            <Label className="mb-1 block text-xs">Tipe</Label>
-            <Select value={v.type} onValueChange={(x) => setV({ ...v, type: x as VehicleTemplate["type"] })}>
+            <Label className="mb-1 block text-xs">Jenis kendaraan</Label>
+            <Select value={v.type} onValueChange={(x) => setV({ ...v, type: x as VehicleType })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="hiace">Hiace</SelectItem>
-                <SelectItem value="elf">Elf</SelectItem>
-                <SelectItem value="minibus">Minibus</SelectItem>
+                <SelectItem value="minicar">Minicar (≈{DEFAULT_CAPACITY.minicar} kursi)</SelectItem>
+                <SelectItem value="suv">SUV (≈{DEFAULT_CAPACITY.suv} kursi)</SelectItem>
+                <SelectItem value="hiace">Hiace (≈{DEFAULT_CAPACITY.hiace} kursi)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label className="mb-1 block text-xs">Kelas</Label>
-            <Select value={v.className} onValueChange={(x) => setV({ ...v, className: x as VehicleTemplate["className"] })}>
+          <div className="sm:col-span-2">
+            <Label className="mb-1 block text-xs">Tier layanan</Label>
+            <Select value={v.tier} onValueChange={(x) => setV({ ...v, tier: x as VehicleTier })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="Economy">Economy</SelectItem>
-                <SelectItem value="Business">Business</SelectItem>
-                <SelectItem value="VIP">VIP</SelectItem>
+                {TIER_ORDER.map((t) => (
+                  <SelectItem key={t} value={t}>{TIER_LABEL[t]}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs">Rows</Label>
-            <Input type="number" min={1} max={10} value={v.rows} onChange={(e) => resize(+e.target.value || 1, v.cols)} />
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs">Cols</Label>
-            <Input type="number" min={1} max={8} value={v.cols} onChange={(e) => resize(v.rows, +e.target.value || 1)} />
           </div>
         </div>
 
         <div className="mt-5">
-          <Tabs defaultValue={v.imageUrl ? "image" : "grid"} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="image"><ImageIcon className="mr-1 h-3.5 w-3.5" /> Image map</TabsTrigger>
-              <TabsTrigger value="grid">Grid</TabsTrigger>
-            </TabsList>
-            <TabsContent value="image" className="mt-3">
-              <SeatImageEditor
-                imageUrl={v.imageUrl}
-                markers={v.seatMap ?? []}
-                onImageChange={(url) => setV({ ...v, imageUrl: url })}
-                onMarkersChange={(seatMap) => setV({ ...v, seatMap })}
-              />
-            </TabsContent>
-            <TabsContent value="grid" className="mt-3">
-              {v.imageUrl && v.seatMap && v.seatMap.length > 0 && (
-                <div className="mb-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-                  Denah gambar aktif untuk kendaraan ini — grid hanya dipakai sebagai fallback.
-                </div>
-              )}
-              <div className="mb-2 flex items-center justify-between">
-                <div className="text-sm font-semibold">Grid layout</div>
-                <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
-                  <RotateCw className="mr-1 h-3.5 w-3.5" /> Renumber
-                </Button>
-              </div>
-              <p className="mb-2 text-xs text-muted-foreground">Klik tiap sel untuk siklus: kursi → lorong → sopir → pintu → kosong.</p>
-              <SeatLayoutGrid layout={v.layout} editable onChange={(layout) => setV({ ...v, layout })} />
-              <div className="mt-2 text-xs text-muted-foreground">Total kursi: {layoutToCounts(v.layout)}</div>
-            </TabsContent>
-          </Tabs>
+          <div className="mb-2 flex items-center justify-between">
+            <div>
+              <div className="text-sm font-semibold">Denah kursi</div>
+              <p className="text-xs text-muted-foreground">
+                Upload foto/skema interior kendaraan, lalu klik untuk menempatkan kursi, sopir, dan pintu.
+              </p>
+            </div>
+            <Badge variant="outline" className="text-xs">{seatCount} kursi</Badge>
+          </div>
+          <SeatImageEditor
+            imageUrl={v.imageUrl}
+            markers={v.seatMap ?? []}
+            onImageChange={(url) => setV({ ...v, imageUrl: url })}
+            onMarkersChange={(seatMap: SeatMarker[]) => setV({ ...v, seatMap })}
+          />
         </div>
 
-        <SheetFooter className="mt-5">
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button
-            onClick={() =>
-              onSave({
-                ...v,
-                layout: renumberLayout(v.layout),
-                seatMap: v.seatMap && v.seatMap.length > 0 ? v.seatMap : undefined,
-                imageUrl: v.seatMap && v.seatMap.length > 0 ? v.imageUrl : v.imageUrl,
-              })
-            }
-          >
-            Simpan
-          </Button>
+        <SheetFooter className="mt-5 flex-col gap-2 sm:flex-row">
+          {!canSave && (
+            <p className="flex-1 text-xs text-amber-700 dark:text-amber-400">
+              Lengkapi: gambar denah + minimal 1 kursi + nama kendaraan.
+            </p>
+          )}
+          <div className="flex gap-2 sm:ml-auto">
+            <Button variant="outline" onClick={onClose}>Batal</Button>
+            <Button
+              disabled={!canSave}
+              onClick={() =>
+                onSave({
+                  ...v,
+                  seatMap: v.seatMap ? renumberSeatMap(v.seatMap) : [],
+                })
+              }
+            >
+              Simpan
+            </Button>
+          </div>
         </SheetFooter>
       </SheetContent>
     </Sheet>
