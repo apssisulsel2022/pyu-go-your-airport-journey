@@ -1,61 +1,70 @@
-# Review & Refinement: Image-Based Seat Editor
+# Seat Editor Refinement — Airline-Style Realistic Seats
 
-## What's already built
+Tujuan: ubah marker bulat sederhana menjadi rendering kursi realistis bergaya airline seat map, ditumpangkan di atas gambar denah yang admin upload. Editor admin & tampilan booking penumpang konsisten.
 
-- `SeatMarker` type + `imageUrl`/`seatMap` on `VehicleTemplate` in `src/store/admin.ts`
-- `SeatImageEditor` — upload, click-to-place, drag, edit label, renumber, clear
-- `SeatImageMap` — read-only viewer
-- Admin vehicles page integrates Image/Grid tabs and shows image-based preview on cards
+## Perubahan visual marker
 
-## Issues found during review
+Ganti bentuk lingkaran 32px dengan **SeatGlyph** SVG bergaya kursi airline:
 
-1. **Booking flow ignores the image map.** `src/routes/shuttle.seats.tsx` still uses the legacy hardcoded `SeatPicker`, so the admin's uploaded denah never reaches passengers. The whole feature is invisible to end users.
-2. **Renumber sort is broken for rows.** `(a.y - b.y) * 1000 + (a.x - b.x)` — when two seats have very different `y`, a tiny `x` difference can still flip order. Should snap rows by Y-distance threshold, then sort by X.
-3. **Stage click vs marker click race.** Clicking a marker bubbles after `stopPropagation` works, but the stage's `onClick` also fires on touch/drag-end in some cases, creating phantom markers next to a dragged one. Need a "did-drag" guard.
-4. **No zoom / pan.** On a long Elf denah the markers are tiny and hard to place accurately on mobile.
-5. **localStorage quota risk.** Compressed JPEG at 1200px ~150-400KB per vehicle is fine, but with 5+ vehicles the zustand persist payload grows fast. Add a soft check + toast if upload >500KB after compression.
-6. **No keyboard delete.** Selecting a marker then pressing Delete/Backspace should remove it.
-7. **Driver/door uniqueness.** A vehicle has one driver; currently you can place many. Should auto-replace existing driver when placing a new one.
-8. **Grid + Image desync.** When `seatMap` exists, the Grid tab still shows the old layout and `layoutToCounts` is ignored — fine, but the Save handler always writes both. Add a small note in the Grid tab when image map is active so admins know which one wins.
-9. **Empty image preview on cards.** When `seatMap` is empty but `imageUrl` is set, card shows the bare image with no markers and "0 kursi". Fall back to Grid preview until at least one seat exists.
+```text
+  ╭──┬──╮      back-rest atas (rounded)
+  │  │  │      armrest kiri & kanan
+  ╰──┴──╯      seat cushion bawah
+     ▼         (opsional) arah hadap
+```
 
-## Plan
+- Bahan: SVG inline 1 komponen (`SeatGlyph`) — sandaran (rect rounded-top), bantalan (rect rounded-bottom), 2 armrest tipis di samping.
+- Label nomor di tengah bantalan, font bold tabular.
+- Ukuran adaptif: default 36×40px, mengecil halus saat zoom > 1.5×.
+- Bayangan halus + border 1.5px untuk kesan "embossed" seperti seatmap maskapai.
 
-### A. Wire image map into the booking flow (highest impact)
+### State color (semantic tokens, bukan warna hard-coded)
 
-- In `src/routes/shuttle.seats.tsx`, look up the booked vehicle from `useAdmin().vehicles` by `schedule.vehicleType`/id.
-- If `imageUrl && seatMap?.length`, render `SeatImageMap` with `selected`, `booked`, `onToggle`.
-- Otherwise fall back to existing `SeatPicker`.
-- Keep `maxSelect=4` behavior by guarding inside `onToggle`.
+| State | Isi | Border |
+|---|---|---|
+| Available | `bg-background` | `border-primary/60` |
+| Selected | `bg-primary` + `text-primary-foreground` | `border-primary` + ring |
+| Booked / occupied | `bg-muted` + diagonal stripe pattern | `border-muted-foreground/30` |
+| Driver | `bg-foreground` + ikon setir | — |
+| Door | `bg-amber-400` + ikon pintu, bentuk persegi tinggi (bukan kursi) | — |
 
-### B. Editor refinements (`SeatImageEditor.tsx`)
+Driver & door tetap pakai badge bulat/kotak kecil agar beda dari kursi.
 
-- Replace renumber sort with a row-bucketing version: sort seats by `y`, bucket while `Δy < 0.06`, sort each bucket by `x`, assign sequentially.
-- Add `didDragRef` set on pointer-move >3px; suppress `onStageClick` for that gesture.
-- Pinch/wheel zoom + drag-to-pan stage (simple CSS transform with `scale` 1–3, reset button). Markers stay in relative coords.
-- Keyboard handler on stage: Delete/Backspace removes `selectedId`; Esc clears selection.
-- Auto-replace existing `driver` / single `door` when placing a new one of the same kind (toast info).
-- Toast warning if compressed image >500KB; suggest re-uploading smaller photo.
+## Rotasi kursi (orientasi)
 
-### C. Sync + preview polish
+Tambah field opsional `rotation?: 0|90|180|270` pada `SeatMarker`. Default 0 (menghadap depan kendaraan). Toolbar editor: tombol "Putar 90°" pada marker terpilih → memutar glyph via `transform: rotate()`. Berguna agar kursi baris belakang/menghadap samping (Hiace baris ke-2) tampak realistis.
 
-- `admin.vehicles.tsx` Grid tab: when `imageUrl && seatMap?.length`, show a subtle banner "Denah gambar aktif — grid hanya fallback".
-- Vehicle card preview: fall back to `SeatLayoutGrid` whenever `seatMap` is empty, even if `imageUrl` is set.
-- Save handler: if `seatMap` is empty array, store `undefined` (already partly done — verify).
+## Editor refinement
 
-### D. Minor
+- **SeatGlyph reusable** di `src/components/admin/SeatGlyph.tsx`, dipakai oleh editor & `SeatImageMap`.
+- **Backdrop gambar diredupkan** saat tool aktif (`img` dengan `opacity-90`) supaya marker lebih kontras.
+- **Snap-to-grid opsional**: toggle "Snap" di toolbar (0.02 step pada x/y) untuk merapikan baris.
+- **Auto-align row**: tombol pada marker terpilih → samakan Y dengan marker terdekat di baris yang sama (delta < 0.06).
+- **Panel terpilih** dapat: ubah label, rotasi (0/90/180/270), hapus.
+- **Legend kecil** di bawah stage menampilkan glyph + arti tiap state.
 
-- `renumberSeatMap`: also strip stale labels from non-seat markers (defensive).
-- `SeatImageMap` button: add `aria-pressed` for selected seats.
+## Booking view (`SeatImageMap`)
 
-## Technical notes
+- Pakai `SeatGlyph` yang sama agar admin & penumpang lihat tampilan identik.
+- Booked seat: glyph abu + diagonal stripe + cursor not-allowed.
+- Selected: glyph primary + scale 1.08 + ring.
+- Tetap dukungan `aria-pressed`, `aria-label`, keyboard focus ring.
 
-- Zoom/pan: wrap `<img>` + markers in an inner `<div>` with `transform: scale(z) translate(px,py)`; coordinate math (`getRel`) divides by the inner rect, which already accounts for the transform — so click placement keeps working.
-- Row bucket constant `0.06` ≈ 6% of image height, a typical row gap on top-down vehicle photos.
-- Keep all changes in presentation/state layers. No schema migration needed (additive).
+## File yang akan diubah/ditambah
 
-## Out of scope
+- **baru** `src/components/admin/SeatGlyph.tsx` — SVG seat, props: `state`, `label`, `rotation`, `size`.
+- `src/store/admin.ts` — tambah `rotation?` pada `SeatMarker`; helper `setMarkerRotation` (opsional, inline saja).
+- `src/components/admin/SeatImageEditor.tsx` — render `SeatGlyph`, tombol rotasi & snap, legend, dim backdrop.
+- `src/components/admin/SeatImageMap.tsx` — render `SeatGlyph`, stripe pattern untuk booked.
 
-- Server persistence (still localStorage via zustand).
-- Multiple drivers/doors per vehicle.
-- Per-seat pricing or class within one vehicle.
+## Di luar scope
+
+- Tidak mengubah flow upload / kompresi / persist (sudah baik).
+- Tidak menambah multi-level deck atau seat class per kursi.
+- Tidak mengganti tools driver/door (tetap badge).
+
+## Catatan teknis singkat
+
+- SVG glyph 100% currentColor-friendly agar token tema langsung berlaku.
+- Stripe pattern: `bg-[repeating-linear-gradient(45deg,...)]` via Tailwind arbitrary value, warna pakai `hsl(var(--muted-foreground)/0.25)`.
+- Rotasi diterapkan ke wrapper `div` marker, posisi (x,y) tidak berubah saat rotate.
