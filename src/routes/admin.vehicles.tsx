@@ -133,13 +133,50 @@ function VehiclesPage() {
 }
 
 function VehicleCard({ v, onEdit, onDelete }: { v: VehicleTemplate; onEdit: () => void; onDelete: () => void }) {
+  const setVehiclePlate = useAdmin((s) => s.setVehiclePlate);
   const seatCount = countSeatsInMap(v.seatMap);
+  const [editingPlate, setEditingPlate] = useState(false);
+  const [plateDraft, setPlateDraft] = useState(v.plate);
+
+  const savePlate = () => {
+    const next = plateDraft.trim();
+    if (!next) {
+      toast.error("Plat tidak boleh kosong");
+      return;
+    }
+    setVehiclePlate(v.id, next);
+    setEditingPlate(false);
+    toast.success("Plat diperbarui");
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-row items-start justify-between space-y-0">
         <div className="min-w-0">
           <CardTitle className="truncate text-base">{v.name}</CardTitle>
-          <div className="text-xs text-muted-foreground">{v.plate}</div>
+          {editingPlate ? (
+            <div className="mt-1 flex items-center gap-1">
+              <Input
+                value={plateDraft}
+                onChange={(e) => setPlateDraft(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") savePlate();
+                  if (e.key === "Escape") { setEditingPlate(false); setPlateDraft(v.plate); }
+                }}
+                className="h-7 w-32 text-xs"
+                autoFocus
+              />
+              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={savePlate}>OK</Button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setPlateDraft(v.plate); setEditingPlate(true); }}
+              className="mt-0.5 inline-flex items-center gap-1 rounded text-xs text-muted-foreground hover:text-foreground"
+              title="Klik untuk ubah plat"
+            >
+              {v.plate} <Pencil className="h-3 w-3 opacity-60" />
+            </button>
+          )}
         </div>
         <div className="flex flex-col items-end gap-1">
           <Badge variant="outline">{TYPE_LABEL[v.type]}</Badge>
