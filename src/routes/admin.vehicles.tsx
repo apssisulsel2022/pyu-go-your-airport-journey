@@ -176,6 +176,11 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
               />
             </TabsContent>
             <TabsContent value="grid" className="mt-3">
+              {v.imageUrl && v.seatMap && v.seatMap.length > 0 && (
+                <div className="mb-2 rounded-md border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                  Denah gambar aktif untuk kendaraan ini — grid hanya dipakai sebagai fallback.
+                </div>
+              )}
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-sm font-semibold">Grid layout</div>
                 <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
