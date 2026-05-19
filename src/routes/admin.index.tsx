@@ -20,8 +20,7 @@ function Dashboard() {
     const seatsBooked = bookings.filter((b) => b.status === "confirmed" || b.status === "boarded").reduce((s, b) => s + b.seats.length, 0);
     const seatsTotal = schedules.reduce((s, sc) => {
       const v = vehicles.find((vv) => vv.id === sc.vehicleId);
-      let count = 0;
-      v?.layout.forEach((r) => r.forEach((c) => c.kind === "seat" && count++));
+      const count = (v?.seatMap ?? []).filter((m) => m.kind === "seat").length;
       return s + count;
     }, 0);
     const occ = seatsTotal ? Math.round((seatsBooked / seatsTotal) * 100) : 0;

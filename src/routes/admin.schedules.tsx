@@ -41,9 +41,7 @@ function SchedulesPage() {
 
   const seatsTotal = (vehicleId: string) => {
     const v = vehicles.find((x) => x.id === vehicleId);
-    let c = 0;
-    v?.layout.forEach((r) => r.forEach((cell) => cell.kind === "seat" && c++));
-    return c;
+    return (v?.seatMap ?? []).filter((m) => m.kind === "seat").length;
   };
 
   return (
@@ -100,7 +98,7 @@ function SchedulesPage() {
                       <TableCell>{pickup?.name ?? "—"}</TableCell>
                       <TableCell>
                         <div>{veh?.name ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground">{veh?.className}</div>
+                        <div className="text-xs text-muted-foreground">{veh?.tier}</div>
                       </TableCell>
                       <TableCell>{formatRupiah(s.price)}</TableCell>
                       <TableCell>{booked}/{total}</TableCell>
