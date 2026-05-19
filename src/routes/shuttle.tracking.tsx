@@ -225,7 +225,6 @@ function TrackingPage() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold uppercase text-primary">{phaseHeadline[phase]}</span>
-                <LivePulse />
               </div>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-3xl font-extrabold tabular-nums">{etaMin}</span>
