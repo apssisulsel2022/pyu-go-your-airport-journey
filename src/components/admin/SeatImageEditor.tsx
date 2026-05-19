@@ -3,11 +3,13 @@ import type { SeatMarker } from "@/store/admin";
 import { renumberSeatMap, countSeatsInMap } from "@/store/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car, ZoomIn, ZoomOut } from "lucide-react";
+import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car, ZoomIn, ZoomOut, Magnet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SeatGlyph } from "./SeatGlyph";
 
 type Tool = "seat" | "driver" | "door";
+
 
 interface Props {
   imageUrl?: string;
@@ -49,10 +51,14 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
   const [tool, setTool] = useState<Tool>("seat");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [snap, setSnap] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<{ id: string; startX: number; startY: number; moved: boolean } | null>(null);
   const justDraggedRef = useRef(false);
+
+  const snapVal = (v: number) => (snap ? Math.round(v / 0.02) * 0.02 : v);
+
 
   const handleUpload = async (file: File) => {
     const url = await fileToDataUrl(file);
