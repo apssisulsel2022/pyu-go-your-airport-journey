@@ -111,7 +111,7 @@ function TrackingPage() {
     }
   }, [progress]);
 
-  if (!pickup || !schedule || !driverStart) return <Navigate to="/" />;
+  if (!pickup || !schedule || !driverStart) return <Navigate to="/bookings" />;
 
   const pickupPos: LatLng = [pickup.lat, pickup.lng];
   const airportPos: LatLng = [KNO_AIRPORT.lat, KNO_AIRPORT.lng];
