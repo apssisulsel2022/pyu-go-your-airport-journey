@@ -190,14 +190,8 @@ function PickupPage() {
             className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 rounded-t-3xl border-t border-border bg-card/95 px-4 pb-4 pt-3 backdrop-blur shadow-float"
           >
             <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-muted" />
-            <div className="flex gap-3">
-              <PickupMiniMap
-                lat={selected.lat}
-                lng={selected.lng}
-                zoom={12}
-                className="h-28 w-36 shrink-0"
-              />
-              <div className="min-w-0 flex-1">
+            <div>
+              <div>
                 <div className="truncate text-sm font-bold">{selected.name}</div>
                 <div className="truncate text-[11px] text-muted-foreground">
                   {selected.distanceKm} km • ETA {selected.etaMin} mnt ke titik
