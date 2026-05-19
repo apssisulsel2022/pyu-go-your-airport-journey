@@ -61,7 +61,7 @@ function SchedulePage() {
         })}
       </div>
 
-      <div className="space-y-3 p-4">
+      <div className="mx-auto max-w-md space-y-3 p-4">
         {schedules.length === 0 && (
           <div className="rounded-2xl bg-card p-8 text-center text-sm text-muted-foreground">
             Tidak ada jadwal untuk service ini. Coba pilih service lain.
