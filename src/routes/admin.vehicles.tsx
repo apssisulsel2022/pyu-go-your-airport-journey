@@ -162,20 +162,46 @@ function VehicleEditor({ value, onClose, onSave }: { value: VehicleTemplate | nu
         </div>
 
         <div className="mt-5">
-          <div className="mb-2 flex items-center justify-between">
-            <div className="text-sm font-semibold">Layout editor</div>
-            <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
-              <RotateCw className="mr-1 h-3.5 w-3.5" /> Renumber
-            </Button>
-          </div>
-          <p className="mb-2 text-xs text-muted-foreground">Klik tiap sel untuk siklus: kursi → lorong → sopir → pintu → kosong.</p>
-          <SeatLayoutGrid layout={v.layout} editable onChange={(layout) => setV({ ...v, layout })} />
-          <div className="mt-2 text-xs text-muted-foreground">Total kursi: {layoutToCounts(v.layout)}</div>
+          <Tabs defaultValue={v.imageUrl ? "image" : "grid"} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="image"><ImageIcon className="mr-1 h-3.5 w-3.5" /> Image map</TabsTrigger>
+              <TabsTrigger value="grid">Grid</TabsTrigger>
+            </TabsList>
+            <TabsContent value="image" className="mt-3">
+              <SeatImageEditor
+                imageUrl={v.imageUrl}
+                markers={v.seatMap ?? []}
+                onImageChange={(url) => setV({ ...v, imageUrl: url })}
+                onMarkersChange={(seatMap) => setV({ ...v, seatMap })}
+              />
+            </TabsContent>
+            <TabsContent value="grid" className="mt-3">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="text-sm font-semibold">Grid layout</div>
+                <Button size="sm" variant="outline" onClick={() => setV({ ...v, layout: renumberLayout(v.layout) })}>
+                  <RotateCw className="mr-1 h-3.5 w-3.5" /> Renumber
+                </Button>
+              </div>
+              <p className="mb-2 text-xs text-muted-foreground">Klik tiap sel untuk siklus: kursi → lorong → sopir → pintu → kosong.</p>
+              <SeatLayoutGrid layout={v.layout} editable onChange={(layout) => setV({ ...v, layout })} />
+              <div className="mt-2 text-xs text-muted-foreground">Total kursi: {layoutToCounts(v.layout)}</div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         <SheetFooter className="mt-5">
           <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={() => onSave({ ...v, layout: renumberLayout(v.layout) })}>Simpan</Button>
+          <Button
+            onClick={() =>
+              onSave({
+                ...v,
+                layout: renumberLayout(v.layout),
+                seatMap: v.seatMap ? v.seatMap : undefined,
+              })
+            }
+          >
+            Simpan
+          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
