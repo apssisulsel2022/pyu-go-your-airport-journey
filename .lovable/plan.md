@@ -1,45 +1,39 @@
-# Refinement `/shuttle/pickup` — Map Lebih Terlihat
+# Polyline mengikuti jalan + jarak hasil routing
 
-## Masalah
+Saat ini peta menggambar polyline lurus (straight line) antara titik jemput dan KNO, dan `distanceKm` di-hardcode di mock data. Kita akan ganti dengan hasil Google Routes API agar polyline mengikuti jalan dan jarak/ETA akurat.
 
-- Map hanya muncul di dalam bottom sheet kecil (80×112 px) setelah user memilih titik. Pada viewport ini hampir tidak terlihat dan terasa seperti "tidak ada map".
-- Tidak ada konteks visual lokasi titik jemput vs KNO di awal halaman, padahal data koordinat (lat/lng) sudah lengkap.
-- Mini map memakai `zoom={10}` → titik & KNO terlihat sebagai dua dot kecil, polyline samar.
+## Yang akan dilakukan
 
-## Yang akan dirubah (UI only)
+1. **Aktifkan konektor Google Maps Platform** (Lovable connector — tanpa setup manual). Dipakai server-side via gateway, jadi API key tetap aman.
 
-1. **Map overview di atas list**
-   - Tambah `MapView` setinggi `h-56` di bawah `BookingStepper`, sebelum kolom search.
-   - Menampilkan semua titik jemput hasil filter + marker KNO.
-   - Center & zoom otomatis: kalau ada `selected` → center ke selected dengan zoom 12 dan tarik polyline ke KNO; kalau tidak → center ke rata-rata semua titik filtered + KNO, zoom 10.
-   - Marker selected diberi style berbeda (lebih besar / warna primary penuh) supaya menonjol.
+2. **Server function `getDrivingRoute`** (`src/lib/routing.functions.ts`):
+   - Input: `{ origin: {lat,lng}, destination: {lat,lng} }`
+   - Memanggil `routes/directions/v2:computeRoutes` lewat gateway dengan `travelMode: DRIVE`, field mask `routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline`.
+   - Output: `{ distanceMeters, durationSec, encodedPolyline }`.
 
-2. **Bottom sheet (preview saat selected)**
-   - Perbesar mini map dari `h-20 w-28` → `h-28 w-36`, zoom dinaikkan ke `12`, supaya rute & titik kelihatan.
-   - Tambahkan label kecil "Rute ke KNO" di atas map.
+3. **Helper decode polyline** (`src/lib/polyline.ts`): decoder standar Google encoded polyline → `[lat,lng][]`. Tanpa dependency baru.
 
-3. **MapView / MapViewClient**
-   - Tambah optional prop `highlightIndex?: number` agar marker tertentu memakai icon lebih besar (radius 14, ring tebal).
-   - Tidak mengubah API yang sudah dipakai komponen lain (semua prop baru bersifat optional).
+4. **Hook `useDrivingRoute(origin, destination)`** (`src/hooks/use-driving-route.ts`):
+   - Pakai `@tanstack/react-query` (sudah ada di project) + `useServerFn`.
+   - Cache key: koordinat dibulatkan 5 desimal supaya stabil.
+   - Return `{ path, distanceKm, durationMin, isLoading }`.
 
-4. **Interaksi**
-   - Klik marker di map overview = sama dengan klik card list (set `selectedId`).
-   - Saat `selectedId` berubah, map overview re-center via `key` reset (paling sederhana, tanpa imperative leaflet API).
+5. **Konsumsi di UI shuttle**:
+   - `shuttle.pickup.tsx` (map overview): saat ada titik terpilih, fetch rute → kirim `route={path}` ke `MapView`. Tampilkan `distanceKm` & ETA hasil routing di bottom sheet (fallback ke mock saat loading).
+   - `shuttle.pickup.$pointId.tsx`: ganti polyline lurus dengan path hasil routing, tampilkan jarak & estimasi tempuh dari API. Pertahankan layout/metric yang ada.
+   - `shuttle.tracking.tsx`: rute armada → KNO juga ikut jalan (sama hook).
+   - `PickupMiniMap.tsx` & list cards: opsional, mini-map tetap pakai garis lurus (hemat kuota); kartu list pakai mock distance sebagai estimasi cepat.
 
-## File yang disentuh
-
-- `src/routes/shuttle.pickup.tsx` — tambah section map overview, perbesar mini map.
-- `src/components/PickupMiniMap.tsx` — terima `zoom` & default lebih besar.
-- `src/components/MapViewClient.tsx` — tambah prop `highlightIndex` + icon varian.
-- `src/components/MapView.tsx` — forward prop baru.
-
-## Tidak disentuh
-
-- Halaman detail titik jemput `/shuttle/pickup/$pointId` (sudah punya map sendiri).
-- Mock data, store, routing, business logic.
-- Modul shuttle lain (schedule, seats, payment, tracking).
+6. **Loading & fallback**: saat fetch belum selesai atau gagal, fallback ke garis lurus + `distanceKm` dari mock supaya UI tidak kosong.
 
 ## Catatan teknis
 
-- Map dimuat via dynamic import di `MapView` (sudah ada). Leaflet CSS sudah di-`@import` di `src/styles.css`, jadi map seharusnya ter-render — penyebab utama "tidak terlihat" adalah ukuran 80×112 px di bottom sheet, bukan masalah library.
-- Tidak ada dependency baru.
+- Semua call ke Routes API lewat **server function** (gateway butuh `LOVABLE_API_KEY` + `GOOGLE_MAPS_API_KEY` yang hanya ada di server).
+- React Query menghindari refetch saat user pindah-pindah titik.
+- `MapView`/`MapViewClient` sudah menerima `route: [number,number][]` — cukup oper path hasil decode, tidak perlu ubah komponen map.
+- Tidak menyentuh modul lain (admin, ride, dsb).
+
+## File yang disentuh
+
+- BARU: `src/lib/routing.functions.ts`, `src/lib/polyline.ts`, `src/hooks/use-driving-route.ts`
+- EDIT: `src/routes/shuttle.pickup.tsx`, `src/routes/shuttle.pickup.$pointId.tsx`, `src/routes/shuttle.tracking.tsx`
