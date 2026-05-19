@@ -3,11 +3,13 @@ import type { SeatMarker } from "@/store/admin";
 import { renumberSeatMap, countSeatsInMap } from "@/store/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car, ZoomIn, ZoomOut } from "lucide-react";
+import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car, ZoomIn, ZoomOut, Magnet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SeatGlyph } from "./SeatGlyph";
 
 type Tool = "seat" | "driver" | "door";
+
 
 interface Props {
   imageUrl?: string;
@@ -49,10 +51,14 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
   const [tool, setTool] = useState<Tool>("seat");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [snap, setSnap] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const dragging = useRef<{ id: string; startX: number; startY: number; moved: boolean } | null>(null);
   const justDraggedRef = useRef(false);
+
+  const snapVal = (v: number) => (snap ? Math.round(v / 0.02) * 0.02 : v);
+
 
   const handleUpload = async (file: File) => {
     const url = await fileToDataUrl(file);
@@ -79,7 +85,9 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
       return;
     }
     if (e.target !== e.currentTarget && (e.target as HTMLElement).dataset.marker) return;
-    const { x, y } = getRel(e);
+    const raw = getRel(e);
+    const x = snapVal(raw.x);
+    const y = snapVal(raw.y);
     const id = "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
     let next = [...markers];
     if (tool === "driver" || tool === "door") {
@@ -112,7 +120,9 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
       const d = dragging.current;
       if (!d.moved && Math.hypot(e.clientX - d.startX, e.clientY - d.startY) < 4) return;
       d.moved = true;
-      const { x, y } = getRel(e);
+      const raw = getRel(e);
+      const x = snapVal(raw.x);
+      const y = snapVal(raw.y);
       onMarkersChange(markers.map((m) => (m.id === d.id ? { ...m, x, y } : m)));
     },
     [markers, onMarkersChange],
@@ -134,6 +144,30 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
 
   const updateLabel = (id: string, label: string) => {
     onMarkersChange(markers.map((m) => (m.id === id && m.kind === "seat" ? { ...m, label } : m)));
+  };
+
+  const rotateMarker = (id: string) => {
+    onMarkersChange(
+      markers.map((m) => {
+        if (m.id !== id) return m;
+        const next = (((m.rotation ?? 0) + 90) % 360) as 0 | 90 | 180 | 270;
+        return { ...m, rotation: next };
+      }),
+    );
+  };
+
+  const alignRow = (id: string) => {
+    const target = markers.find((m) => m.id === id);
+    if (!target) return;
+    // Find nearest seat in same approximate row (Δy < 0.06) and snap Y.
+    const peer = markers
+      .filter((m) => m.id !== id && m.kind === "seat" && Math.abs(m.y - target.y) < 0.06)
+      .sort((a, b) => Math.abs(a.y - target.y) - Math.abs(b.y - target.y))[0];
+    if (!peer) {
+      toast.info("Tidak ada kursi lain di baris ini.");
+      return;
+    }
+    onMarkersChange(markers.map((m) => (m.id === id ? { ...m, y: peer.y } : m)));
   };
 
   // Keyboard: Delete/Backspace removes selected, Esc clears.
@@ -236,8 +270,25 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
           </div>
         )}
 
+        {imageUrl && (
+          <div className="flex items-center gap-1 rounded-md border border-input p-1">
+            <button
+              type="button"
+              className={cn(
+                "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium",
+                snap ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent",
+              )}
+              onClick={() => setSnap((s) => !s)}
+              aria-pressed={snap}
+            >
+              <Magnet className="h-3.5 w-3.5" /> Snap
+            </button>
+          </div>
+        )}
+
         <div className="ml-auto text-xs text-muted-foreground">{countSeatsInMap(markers)} kursi</div>
       </div>
+
 
       {/* Stage */}
       {!imageUrl ? (
@@ -259,11 +310,42 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
           >
-            <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full" draggable={false} />
+            <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full opacity-90" draggable={false} />
             {markers.map((m) => {
               const meta = toolMeta[m.kind];
               const Icon = meta.icon;
               const sel = m.id === selectedId;
+              if (m.kind === "seat") {
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    data-marker="1"
+                    onPointerDown={(e) => startDrag(e, m.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (justDraggedRef.current) {
+                        justDraggedRef.current = false;
+                        return;
+                      }
+                      setSelectedId(m.id);
+                    }}
+                    className={cn(
+                      "absolute -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-md transition active:cursor-grabbing",
+                      sel && "scale-110",
+                    )}
+                    style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
+                  >
+                    <SeatGlyph
+                      label={m.label}
+                      state={sel ? "selected" : "available"}
+                      rotation={m.rotation ?? 0}
+                      size={36}
+                      selectedInEditor={sel}
+                    />
+                  </button>
+                );
+              }
               return (
                 <button
                   key={m.id}
@@ -285,11 +367,26 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
                   )}
                   style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
                 >
-                  {m.kind === "seat" ? m.label : <Icon className="h-3.5 w-3.5" />}
+                  <Icon className="h-3.5 w-3.5" />
                 </button>
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Legend */}
+      {imageUrl && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5"><SeatGlyph size={20} state="available" /> Tersedia</span>
+          <span className="flex items-center gap-1.5"><SeatGlyph size={20} state="selected" /> Dipilih</span>
+          <span className="flex items-center gap-1.5"><SeatGlyph size={20} state="booked" /> Terisi</span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"><Car className="h-2.5 w-2.5" /></span> Sopir
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-flex h-4 w-3 items-center justify-center rounded-sm bg-amber-400 text-amber-950"><DoorOpen className="h-2.5 w-2.5" /></span> Pintu
+          </span>
         </div>
       )}
 
@@ -305,9 +402,20 @@ export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersCha
               <Input
                 value={selected.label ?? ""}
                 onChange={(e) => updateLabel(selected.id, e.target.value)}
-                className="h-8 w-20"
+                className="h-8 w-16"
               />
+              <Button size="sm" variant="outline" onClick={() => rotateMarker(selected.id)} title="Putar 90°">
+                <RotateCw className="mr-1 h-3.5 w-3.5" /> {selected.rotation ?? 0}°
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => alignRow(selected.id)} title="Sejajarkan ke baris terdekat">
+                <Magnet className="mr-1 h-3.5 w-3.5" /> Align
+              </Button>
             </>
+          )}
+          {selected.kind !== "seat" && (
+            <Button size="sm" variant="outline" onClick={() => rotateMarker(selected.id)}>
+              <RotateCw className="mr-1 h-3.5 w-3.5" /> {selected.rotation ?? 0}°
+            </Button>
           )}
           <Button
             size="sm"
