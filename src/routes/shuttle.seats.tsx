@@ -110,10 +110,10 @@ function SeatsPage() {
           </div>
           <button
             disabled={selectedSeats.length === 0}
-            onClick={() => nav({ to: "/shuttle/payment" })}
+            onClick={() => nav({ to: "/shuttle/passenger" })}
             className="flex-1 rounded-full bg-primary py-3 text-sm font-bold text-primary-foreground shadow-card transition disabled:opacity-40"
           >
-            Lanjut ke Pembayaran
+            Lanjut ke Penumpang
           </button>
         </div>
       </motion.div>
