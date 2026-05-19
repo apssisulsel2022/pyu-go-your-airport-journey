@@ -1,63 +1,83 @@
-# Penyempurnaan Halaman Lacak Shuttle
+# Refinement Flow Shuttle
 
-Tujuan: membuat halaman `/shuttle/tracking` terasa realtime — posisi shuttle bergerak halus di map, ETA terus menghitung mundur, status timeline berubah otomatis, dan info perjalanan (kecepatan, jarak tersisa, jam tiba) selalu update.
+Fokus penyempurnaan UX dan konsistensi visual di seluruh alur pemesanan shuttle (`/shuttle/*`) tanpa mengubah logika bisnis inti.
 
-## Perubahan UX
+## Temuan utama
 
-### Phase perjalanan otomatis
-Empat fase yang dijalankan berurutan berdasarkan progress (0–1):
-1. **Driver dijadwalkan** (progress 0)
-2. **Menuju titik jemput** (0–0.35) — shuttle bergerak dari posisi awal driver ke pickup
-3. **Tiba di titik jemput / boarding** (0.35–0.4) — jeda singkat
-4. **Dalam perjalanan ke KNO** (0.4–1) — shuttle bergerak dari pickup ke bandara
-5. **Tiba di KNO** (progress = 1)
+1. **Tidak ada step indicator** — pengguna tidak tahu posisinya di tahap mana (Pickup → Service → Jadwal → Kursi → Penumpang → Bayar → Tiket).
+2. **Data penumpang tidak pernah diisi** — store sudah punya `setPassenger`, tapi tidak ada langkah input nama/telp. Ini muncul kosong di e-ticket.
+3. **Pickup list**: mini map dirender untuk SETIAP kartu → berat di list panjang dan menarik fokus dari konten. Sebaiknya map hanya untuk kartu yang dipilih / di-expand.
+4. **Service tier**: kartu tidak menampilkan jam keberangkatan paling awal & durasi rata-rata, padahal info ini berguna untuk memutuskan.
+5. **Schedule page**: pemilihan tanggal hanya dekoratif (jadwal tidak benar-benar difilter per tanggal). Tambahkan label hari & set tanggal langsung ke store ketika berubah; tampilkan empty state per tanggal jika ada.
+6. **Layout inconsistency**: beberapa halaman menggunakan sticky footer `max-w-md` (kursi, bayar) sementara konten utama full-width → footer terlihat menggantung di tengah pada layar lebar. Standarkan container `max-w-md mx-auto` untuk seluruh flow mobile-style.
+7. **Payment**: tidak menampilkan jumlah penumpang, tanggal, atau ringkasan jemput. Promo tidak ada feedback "berlaku/invalid".
+8. **Ticket**: tombol **Bagikan** non-fungsional; tombol Download bisa gagal karena ikon emoji & gradient di latar belakang. Stub atas tiket pakai `bg-hero-gradient` yang bertabrakan saat ter-export ke PNG.
+9. **Tracking**: ETA dihitung dari sisa simulasi (`DURATION_SEC * (1 - progress)`), bukan dari `remainingKm / speed`. Akibatnya ETA tidak berubah saat kecepatan berubah. Kecil tapi terasa "tidak hidup".
 
-Step timeline tercentang otomatis sesuai fase aktif.
+## Rencana perubahan
 
-### Peta realtime
-- Polyline penuh dari titik awal driver → pickup → KNO sebagai rute referensi (abu).
-- Polyline kedua menebal di bagian yang sudah dilalui (biru primary).
-- Marker shuttle (icon bus) bergerak halus tiap 1 detik dengan interpolasi linear antara titik.
-- Auto-pan map mengikuti shuttle (opsional, tetap fit-to-route saat mount).
+### A. Komponen baru
 
-### Live info card
-- **ETA**: hitung dari sisa jarak / kecepatan rata-rata, refresh tiap detik (format menit + detik).
-- **Jarak tersisa** (km) — haversine, update tiap tick.
-- **Kecepatan saat ini** (km/h) — variasikan 30–55 km/h, refresh tiap 3 detik.
-- **Estimasi waktu tiba (jam)** — `now + ETA`.
-- Badge "LIVE" dengan dot berkedip.
+- `src/components/BookingStepper.tsx` — stepper kompak 6 langkah (Jemput, Service, Jadwal, Kursi, Penumpang, Bayar). Otomatis menyorot langkah aktif berdasarkan `useLocation`.
+- `src/components/ShuttleShell.tsx` (opsional ringan) — wrapper `max-w-md mx-auto` agar layout konsisten. Atau cukup tambah class di tiap route.
 
-### Notifikasi fase
-Toast (sonner) saat fase berganti, misal "Shuttle tiba di titik jemput" dan "Boarding selesai, menuju KNO".
+### B. Route changes
 
-## Detail Teknis
+- `shuttle.pickup.tsx`
+  - Hapus mini-map per kartu, ganti dengan badge jarak & ETA yang lebih besar.
+  - Tampilkan mini-map satu kali di bawah list untuk kartu yang ter-highlight (state lokal `selectedId`), lalu CTA "Lanjut".
+  - Tambah `BookingStepper` di atas.
 
-### Komponen baru
-- `src/components/LivePulse.tsx` — dot hijau berkedip + label "LIVE".
+- `shuttle.service.tsx`
+  - Tambah info "Berangkat mulai pukul {min}", "Durasi ±1j 30m" di tiap kartu.
+  - Tambah `BookingStepper`.
 
-### State & timer di `shuttle.tracking.tsx`
-- `progress` 0–1, naik dengan `requestAnimationFrame` (delta time-based) bukan setInterval, supaya smooth.
-- Total durasi simulasi: ~120 detik (pickup→KNO) + 60 detik (driver→pickup).
-- Hitung `currentPos` dari segmen aktif (driver→pickup atau pickup→KNO) berdasarkan `subProgress`.
-- `etaSec` dihitung dari sisa jarak total dibagi kecepatan rata-rata simulasi.
-- `speedKmh` di-randomize halus (sin wave + jitter) tiap detik untuk efek hidup.
-- `useEffect` cleanup `cancelAnimationFrame`.
+- `shuttle.schedule.tsx`
+  - Filter jadwal juga oleh tanggal (gunakan field `daysAvailable` jika ada di mock, fallback semua hari). Empty state per tanggal.
+  - Set `setDate` saat user mengganti tanggal (sekarang hanya di-set saat klik jadwal).
+  - Tambah `BookingStepper`.
 
-### Util
-- `haversine(a,b)` jarak km.
-- `lerp(a,b,t)` interpolasi.
-- Driver start position: offset acak ~1.5km dari pickup (simulasi posisi awal driver).
+- `shuttle.seats.tsx`
+  - Bungkus konten utama dengan `max-w-md mx-auto`.
+  - Tambah `BookingStepper`.
+  - CTA "Lanjut ke Penumpang" (sebelumnya langsung ke Pembayaran).
 
-### MapView
-- Tambah prop `vehicleIcon` opsional di `MapViewClient` — ganti icon `✈️` jadi `🚐` saat mode shuttle. Aktualnya, reuse `showPlane` rename ke `showVehicle` + emoji opsional. Untuk minimal change: tambah prop `vehicleEmoji` opsional, default "✈️".
-- Tambah dukungan dua polyline (rute penuh abu + rute terlewati biru) lewat prop `traveledRoute` opsional.
+- `shuttle.passenger.tsx` **(baru)**
+  - Form nama & nomor HP per kursi (atau minimal 1 kontak utama untuk semua kursi).
+  - Validasi simpel: nama ≥ 3 huruf, telp 10–14 digit.
+  - Simpan via `setPassenger`, lanjut ke `/shuttle/payment`.
 
-### File yang disentuh
-- `src/routes/shuttle.tracking.tsx` (rewrite logic + UI)
-- `src/components/MapView.tsx` + `src/components/MapViewClient.tsx` (tambah props `vehicleEmoji`, `traveledRoute`)
-- `src/components/LivePulse.tsx` (baru)
+- `shuttle.payment.tsx`
+  - Ringkasan: tanggal, jam, jumlah penumpang, nama kontak.
+  - Promo: tampilkan badge "Berhasil"/"Kode tidak valid" setelah submit.
+  - Standarkan `max-w-md mx-auto`.
+  - Tambah `BookingStepper`.
 
-## Out of scope
-- Integrasi WebSocket/GPS real (semua tetap simulasi client-side).
-- Routing API jalan (rute tetap garis lurus antar 3 titik).
-- Push notification system.
+- `shuttle.ticket.tsx`
+  - Tombol Bagikan: gunakan `navigator.share` jika tersedia, fallback copy link/kode.
+  - Saat download: bekukan gradient di stub atas dengan warna solid `--primary` agar PNG bersih. Sembunyikan elemen perforation gradient saat capture (gunakan ref + class `capture-clean`).
+  - Tampilkan nama penumpang utama.
+
+- `shuttle.tracking.tsx`
+  - Hitung `etaSec = remainingKm / max(15, speed) * 3600` (clamp), tampilkan tetap berdampingan dengan progress simulasi.
+  - Sisanya tetap; halaman sudah solid.
+
+### C. Routing
+
+Tambah file route baru `src/routes/shuttle.passenger.tsx` (TanStack file-based routing akan auto-generate). Update transisi di `shuttle.seats.tsx` dan `shuttle.payment.tsx` agar urutannya:
+
+```text
+pickup → service → schedule → seats → passenger → payment → ticket → tracking
+```
+
+### D. Out of scope
+
+- Integrasi backend / Lovable Cloud.
+- Real-time GPS atau routing API beneran.
+- Perubahan admin panel.
+
+## Catatan teknis singkat
+
+- Stepper murni client-side via `useLocation().pathname`.
+- Form penumpang pakai `useState` lokal, tidak butuh react-hook-form.
+- Untuk capture tiket bersih: render varian "print-safe" saat `downloading=true` (swap class gradient → solid sebelum `toPng`).
