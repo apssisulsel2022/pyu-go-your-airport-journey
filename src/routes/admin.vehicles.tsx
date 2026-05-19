@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useAdmin, renumberLayout, layoutToCounts, countSeatsInMap, type VehicleTemplate, type SeatCell, type SeatMarker } from "@/store/admin";
+import { useAdmin, renumberLayout, layoutToCounts, countSeatsInMap, type VehicleTemplate, type SeatCell } from "@/store/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
