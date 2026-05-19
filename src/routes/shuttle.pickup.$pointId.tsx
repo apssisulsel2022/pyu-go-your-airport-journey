@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -51,23 +51,7 @@ function PickupRoutePreview() {
   const setPickup = useBooking((s) => s.setPickup);
   const point = pickupPoints.find((p) => p.id === pointId);
 
-  if (!point) {
-    return (
-      <div className="min-h-screen grid place-items-center p-6 text-center">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            Titik jemput tidak ditemukan.
-          </p>
-          <Link
-            to="/shuttle/pickup"
-            className="mt-3 inline-block rounded-full bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
-          >
-            Kembali memilih titik
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (!point) throw notFound();
 
   const estimasiMnt = Math.round(point.distanceKm * 2.5 + 30);
   const arriveAt = new Date(Date.now() + (point.etaMin + estimasiMnt) * 60000);
@@ -108,7 +92,7 @@ function PickupRoutePreview() {
         >
           <MapView
             center={center}
-            zoom={10}
+            zoom={11}
             className="h-64 w-full"
             points={[
               { lat: point.lat, lng: point.lng, label: point.name },

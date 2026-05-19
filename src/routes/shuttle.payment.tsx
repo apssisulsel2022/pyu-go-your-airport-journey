@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BookingStepper } from "@/components/BookingStepper";
 import { useBooking } from "@/store/booking";
 import { formatRupiah, KNO_AIRPORT } from "@/lib/mock-data";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/shuttle/payment")({
   head: () => ({ meta: [{ title: "Pembayaran — PYU-GO" }] }),
@@ -24,7 +25,7 @@ const VALID_PROMOS: Record<string, number> = {
 };
 
 function PaymentPage() {
-  const { pickup, schedule, selectedSeats, setBookingCode, date, passengerName, passengerPhone } =
+  const { pickup, schedule, selectedSeats, setBookingCode, setPayment, date, passengerName, passengerPhone } =
     useBooking();
   const nav = useNavigate();
   const [method, setMethod] = useState("ewallet");
@@ -36,10 +37,12 @@ function PaymentPage() {
   if (!pickup || !schedule || selectedSeats.length === 0)
     return <Navigate to="/shuttle/pickup" />;
 
+  const EWALLET_BALANCE = 250000;
   const subtotal = selectedSeats.length * schedule.price;
   const discount = appliedPromo ? Math.floor(subtotal * appliedPromo.rate) : 0;
   const fee = 2500;
   const total = subtotal - discount + fee;
+  const ewalletShort = method === "ewallet" && total > EWALLET_BALANCE;
 
   const applyPromo = () => {
     const code = promo.trim().toUpperCase();
@@ -54,11 +57,22 @@ function PaymentPage() {
     }
   };
 
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromo("");
+    setPromoError(null);
+  };
+
   const pay = async () => {
+    if (ewalletShort) {
+      toast.error("Saldo PYU Pay tidak cukup. Pilih metode lain.");
+      return;
+    }
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1400));
     const code = "PYU" + Math.random().toString(36).slice(2, 8).toUpperCase();
     setBookingCode(code);
+    setPayment(total, appliedPromo?.code ?? null);
     nav({ to: "/shuttle/ticket" });
   };
 
@@ -130,15 +144,21 @@ function PaymentPage() {
             </div>
             <button
               onClick={applyPromo}
-              className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+              disabled={!promo.trim()}
+              className="rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-40"
             >
               Pakai
             </button>
           </div>
           {appliedPromo && (
-            <div className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-success">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Promo {appliedPromo.code} berhasil dipakai (−{formatRupiah(discount)})
+            <div className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-success/10 px-2.5 py-1.5 text-xs font-semibold text-success">
+              <span className="flex items-center gap-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {appliedPromo.code} aktif (−{formatRupiah(discount)})
+              </span>
+              <button onClick={removePromo} className="text-[11px] font-bold underline">
+                Hapus
+              </button>
             </div>
           )}
           {promoError && (
@@ -174,7 +194,14 @@ function PaymentPage() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-sm font-semibold">{m.label}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold">{m.label}</span>
+                      {m.id === "ewallet" && ewalletShort && (
+                        <span className="rounded-full bg-destructive/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-destructive">
+                          Saldo kurang
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-muted-foreground">{m.subtitle}</div>
                   </div>
                   <span

@@ -10,6 +10,8 @@ interface BookingState {
   passengerName: string;
   passengerPhone: string;
   bookingCode: string | null;
+  paymentTotal: number | null;
+  promoCode: string | null;
   setPickup: (p: PickupPoint) => void;
   setTier: (t: VehicleTier) => void;
   setDate: (d: string) => void;
@@ -17,6 +19,7 @@ interface BookingState {
   toggleSeat: (s: string) => void;
   setPassenger: (name: string, phone: string) => void;
   setBookingCode: (c: string) => void;
+  setPayment: (total: number, promo: string | null) => void;
   reset: () => void;
 }
 
@@ -29,6 +32,8 @@ export const useBooking = create<BookingState>((set) => ({
   passengerName: "",
   passengerPhone: "",
   bookingCode: null,
+  paymentTotal: null,
+  promoCode: null,
   setPickup: (p) => set({ pickup: p }),
   setTier: (t) => set({ tier: t }),
   setDate: (d) => set({ date: d }),
@@ -41,5 +46,16 @@ export const useBooking = create<BookingState>((set) => ({
     })),
   setPassenger: (name, phone) => set({ passengerName: name, passengerPhone: phone }),
   setBookingCode: (c) => set({ bookingCode: c }),
-  reset: () => set({ pickup: null, tier: null, date: null, schedule: null, selectedSeats: [], bookingCode: null }),
+  setPayment: (total, promo) => set({ paymentTotal: total, promoCode: promo }),
+  reset: () =>
+    set({
+      pickup: null,
+      tier: null,
+      date: null,
+      schedule: null,
+      selectedSeats: [],
+      bookingCode: null,
+      paymentTotal: null,
+      promoCode: null,
+    }),
 }));

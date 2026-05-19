@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
@@ -15,11 +15,13 @@ export const Route = createFileRoute("/shuttle/ticket")({
 });
 
 function TicketPage() {
-  const { pickup, schedule, selectedSeats, bookingCode, date, passengerName, passengerPhone } =
+  const { pickup, schedule, selectedSeats, bookingCode, date, passengerName, passengerPhone, paymentTotal, promoCode, reset } =
     useBooking();
   const ticketRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  if (!pickup || !schedule || !bookingCode) return <Navigate to="/" />;
+  const nav = useNavigate();
+  if (!pickup || !schedule || !bookingCode) return <Navigate to="/bookings" />;
+  const totalPaid = paymentTotal ?? selectedSeats.length * schedule.price;
 
   const handleDownload = async () => {
     if (!ticketRef.current) return;
@@ -149,11 +151,19 @@ function TicketPage() {
             )}
           </div>
 
-          <div className="mt-4 flex items-center justify-between rounded-xl bg-secondary p-3 text-xs">
-            <span className="text-muted-foreground">Total dibayar</span>
-            <span className="text-base font-extrabold text-primary">
-              {formatRupiah(selectedSeats.length * schedule.price)}
-            </span>
+          <div className="mt-4 space-y-1.5">
+            {promoCode && (
+              <div className="flex items-center justify-between rounded-xl bg-success/10 px-3 py-2 text-xs font-semibold text-success">
+                <span>Promo {promoCode}</span>
+                <span>Tersimpan</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between rounded-xl bg-secondary p-3 text-xs">
+              <span className="text-muted-foreground">Total dibayar</span>
+              <span className="text-base font-extrabold text-primary">
+                {formatRupiah(totalPaid)}
+              </span>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -180,6 +190,15 @@ function TicketPage() {
             <Navigation className="h-4 w-4" /> Lacak Shuttle
           </Link>
         </div>
+        <button
+          onClick={() => {
+            reset();
+            nav({ to: "/shuttle/pickup" });
+          }}
+          className="w-full rounded-full border border-white/30 bg-transparent py-2.5 text-xs font-semibold text-primary-foreground"
+        >
+          Pesan perjalanan lain
+        </button>
       </div>
 
       <div className="mt-4 text-center text-xs text-primary-foreground/80">

@@ -20,7 +20,8 @@ function SeatsPage() {
   const { schedule, selectedSeats, toggleSeat, pickup } = useBooking();
   const vehicles = useAdmin((s) => s.vehicles);
   const nav = useNavigate();
-  if (!schedule || !pickup) return <Navigate to="/shuttle/pickup" />;
+  if (!pickup) return <Navigate to="/shuttle/pickup" />;
+  if (!schedule) return <Navigate to="/shuttle/schedule" />;
 
   const total = selectedSeats.length * schedule.price;
 
