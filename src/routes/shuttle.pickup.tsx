@@ -7,6 +7,7 @@ import { BookingStepper } from "@/components/BookingStepper";
 import { MapView } from "@/components/MapView";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
 import { useBooking } from "@/store/booking";
+import { useOsrmRoute } from "@/hooks/use-osrm-route";
 
 
 export const Route = createFileRoute("/shuttle/pickup")({
