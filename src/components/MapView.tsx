@@ -10,6 +10,9 @@ export function MapView(props: {
   showPlane?: boolean;
   planePos?: [number, number];
   vehicleEmoji?: string;
+  highlightIndex?: number;
+  airportIndex?: number;
+  onPointClick?: (index: number) => void;
 }) {
   const [mounted, setMounted] = useState(false);
   const [Comp, setComp] = useState<React.ComponentType<any> | null>(null);

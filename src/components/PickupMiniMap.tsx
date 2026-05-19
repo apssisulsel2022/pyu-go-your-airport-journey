@@ -4,10 +4,12 @@ import { KNO_AIRPORT } from "@/lib/mock-data";
 export function PickupMiniMap({
   lat,
   lng,
+  zoom = 11,
   className = "h-32 w-full",
 }: {
   lat: number;
   lng: number;
+  zoom?: number;
   className?: string;
 }) {
   const center: [number, number] = [
@@ -17,8 +19,10 @@ export function PickupMiniMap({
   return (
     <MapView
       center={center}
-      zoom={10}
+      zoom={zoom}
       className={className}
+      airportIndex={1}
+      highlightIndex={0}
       points={[
         { lat, lng, label: "Jemput" },
         { lat: KNO_AIRPORT.lat, lng: KNO_AIRPORT.lng, label: "KNO" },
