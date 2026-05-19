@@ -108,6 +108,7 @@ export interface AdminSchedule {
   arrivalTime: string;
   price: number;
   active: boolean;
+  seatQuota?: number; // override kursi yang dijual; default = kapasitas kendaraan
 }
 
 export type BookingStatus = "pending" | "confirmed" | "boarded" | "cancelled" | "refunded";
