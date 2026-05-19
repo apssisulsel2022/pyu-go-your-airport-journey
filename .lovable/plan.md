@@ -1,84 +1,63 @@
-# Penyempurnaan Flow Booking Shuttle
+# Penyempurnaan Halaman Lacak Shuttle
 
-Tujuan: meningkatkan tahapan pemesanan dari pilih titik jemput → jadwal → kursi → pembayaran → e-ticket agar lebih informatif dan visual. Penambahan mini map dengan pengukuran jarak, pemilihan tier service yang lebih jelas, dan alur lanjutan yang konsisten hingga download e-ticket.
+Tujuan: membuat halaman `/shuttle/tracking` terasa realtime — posisi shuttle bergerak halus di map, ETA terus menghitung mundur, status timeline berubah otomatis, dan info perjalanan (kecepatan, jarak tersisa, jam tiba) selalu update.
 
-## Ringkasan perubahan per tahap
+## Perubahan UX
 
-### 1. Pilih Titik Jemput (`/shuttle/pickup`)
+### Phase perjalanan otomatis
+Empat fase yang dijalankan berurutan berdasarkan progress (0–1):
+1. **Driver dijadwalkan** (progress 0)
+2. **Menuju titik jemput** (0–0.35) — shuttle bergerak dari posisi awal driver ke pickup
+3. **Tiba di titik jemput / boarding** (0.35–0.4) — jeda singkat
+4. **Dalam perjalanan ke KNO** (0.4–1) — shuttle bergerak dari pickup ke bandara
+5. **Tiba di KNO** (progress = 1)
 
-- Tambahkan **mini map** pada setiap kartu titik jemput menggunakan komponen `MapView` yang sudah ada (Leaflet).
-- Mini map menampilkan: titik jemput, KNO airport, dan polyline rute seperti gojek antar keduanya.
-- Tampilkan info lengkap di kartu: jarak (km), estimasi waktu tempuh ke KNO, ETA penjemputan, rayon, alamat, kota.
-- Layout kartu jadi lebih besar (2 kolom info + map kecil di kanan / atas pada mobile).
-- Saat hover/aktif, kartu menonjol; tombol "Pilih titik ini" eksplisit.
+Step timeline tercentang otomatis sesuai fase aktif.
 
-### 2. Pilih Jenis Service (BARU — `/shuttle/service`)
+### Peta realtime
+- Polyline penuh dari titik awal driver → pickup → KNO sebagai rute referensi (abu).
+- Polyline kedua menebal di bagian yang sudah dilalui (biru primary).
+- Marker shuttle (icon bus) bergerak halus tiap 1 detik dengan interpolasi linear antara titik.
+- Auto-pan map mengikuti shuttle (opsional, tetap fit-to-route saat mount).
 
-- Setelah memilih titik jemput, pengguna ke halaman pemilihan tier: **Reguler / SemiExecutive / Executive**.
-- Tiap tier ditampilkan sebagai kartu besar dengan: deskripsi singkat, range harga, jumlah kendaraan tersedia, fasilitas (AC, recliner, dsb. — mock).
-- Setelah pilih tier, simpan ke store dan lanjut ke halaman jadwal yang sudah difilter.
+### Live info card
+- **ETA**: hitung dari sisa jarak / kecepatan rata-rata, refresh tiap detik (format menit + detik).
+- **Jarak tersisa** (km) — haversine, update tiap tick.
+- **Kecepatan saat ini** (km/h) — variasikan 30–55 km/h, refresh tiap 3 detik.
+- **Estimasi waktu tiba (jam)** — `now + ETA`.
+- Badge "LIVE" dengan dot berkedip.
 
-### 3. Pilih Kendaraan & Jadwal (`/shuttle/schedule`)
-
-- Filter otomatis hanya jadwal dengan `className === tier` terpilih.
-- Tampilkan informasi kendaraan lebih lengkap per kartu jadwal:
-  - thumbnail kendaraan (dari `imageUrl` admin vehicle),
-  - nama, plat, tipe (Minicar/SUV/Hiace),
-  - jam berangkat–tiba, durasi,
-  - sisa kursi, harga,
-  - fasilitas singkat (badge).
-- Date strip 7 hari tetap.
-
-### 4. Pilih Kursi (`/shuttle/seats`) — minor polish
-
-- Sudah memakai `SeatImageMap`. Tambahkan ringkasan kendaraan + tier + titik jemput → KNO di header agar konteks jelas.
-- Footer total tetap.
-
-### 5. Pembayaran (`/shuttle/payment`) — tetap, hanya tambah ringkasan service & rute.
-
-### 6. E-Ticket (`/shuttle/ticket`) — tambah tombol **Download E-Ticket** (PDF/PNG)
-
-- Gunakan `html-to-image` untuk merender area tiket → PNG dan trigger download.
-- Tombol "Download E-Ticket" di bawah QR.
-- Tampilkan info lengkap: nama, kode booking, rute, jadwal, kendaraan, kursi, harga, QR.
+### Notifikasi fase
+Toast (sonner) saat fase berganti, misal "Shuttle tiba di titik jemput" dan "Boarding selesai, menuju KNO".
 
 ## Detail Teknis
 
-### Store
-
-- Tambah field `tier: VehicleTier | null` di `useBooking` + setter `setTier`.
-- `reset()` reset tier juga.
-
-### Routing baru
-
-- File: `src/routes/shuttle.service.tsx` (route `/shuttle/service`).
-- Update arah navigasi:
-  - `pickup` → `/shuttle/service`
-  - `service` → `/shuttle/schedule`
-  - sisanya tidak berubah.
-
-### Mini map di pickup
-
-- Reuse `MapView` (Leaflet). Set `className="h-32 w-full"`, `points` = [pickup, KNO], `route` = [[pickup.lat,lng],[KNO.lat,lng]], `zoom` agar fit keduanya (pakai center = midpoint).
-- Jarak ditampilkan dari field `distanceKm` yang ada; tambahkan rumus haversine kalau perlu untuk konsistensi (gunakan `distanceKm` mock saja agar simpel).
-
-### Filter jadwal per tier
-
-- `getSchedulesForPickup` tetap; filter di komponen: `schedules.filter(s => s.className === tier)`.
-- Jika kosong, tampilkan empty state.
-
-### Download E-ticket
-
-- `bun add html-to-image`.
-- Tombol memanggil `toPng(ticketRef.current)` → buat `<a download="eticket-{code}.png">` dan click.
-
 ### Komponen baru
+- `src/components/LivePulse.tsx` — dot hijau berkedip + label "LIVE".
 
-- `src/components/PickupMiniMap.tsx` — wrapper kecil sekitar `MapView` untuk konsistensi.
-- `src/routes/shuttle.service.tsx` — halaman pilih tier.
+### State & timer di `shuttle.tracking.tsx`
+- `progress` 0–1, naik dengan `requestAnimationFrame` (delta time-based) bukan setInterval, supaya smooth.
+- Total durasi simulasi: ~120 detik (pickup→KNO) + 60 detik (driver→pickup).
+- Hitung `currentPos` dari segmen aktif (driver→pickup atau pickup→KNO) berdasarkan `subProgress`.
+- `etaSec` dihitung dari sisa jarak total dibagi kecepatan rata-rata simulasi.
+- `speedKmh` di-randomize halus (sin wave + jitter) tiap detik untuk efek hidup.
+- `useEffect` cleanup `cancelAnimationFrame`.
+
+### Util
+- `haversine(a,b)` jarak km.
+- `lerp(a,b,t)` interpolasi.
+- Driver start position: offset acak ~1.5km dari pickup (simulasi posisi awal driver).
+
+### MapView
+- Tambah prop `vehicleIcon` opsional di `MapViewClient` — ganti icon `✈️` jadi `🚐` saat mode shuttle. Aktualnya, reuse `showPlane` rename ke `showVehicle` + emoji opsional. Untuk minimal change: tambah prop `vehicleEmoji` opsional, default "✈️".
+- Tambah dukungan dua polyline (rute penuh abu + rute terlewati biru) lewat prop `traveledRoute` opsional.
+
+### File yang disentuh
+- `src/routes/shuttle.tracking.tsx` (rewrite logic + UI)
+- `src/components/MapView.tsx` + `src/components/MapViewClient.tsx` (tambah props `vehicleEmoji`, `traveledRoute`)
+- `src/components/LivePulse.tsx` (baru)
 
 ## Out of scope
-
-- Perubahan backend / persistensi.
-- Perhitungan jarak realistis via routing API (gunakan distance mock + garis lurus).
-- Multi-passenger detail form changes.
+- Integrasi WebSocket/GPS real (semua tetap simulasi client-side).
+- Routing API jalan (rute tetap garis lurus antar 3 titik).
+- Push notification system.
