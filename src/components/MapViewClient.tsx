@@ -8,29 +8,34 @@ const defaultIcon = new L.DivIcon({
   iconAnchor: [9, 9],
 });
 
-const planeIcon = new L.DivIcon({
-  className: "",
-  html: `<div style="font-size:22px;transform:translateY(-2px)">✈️</div>`,
-  iconSize: [22, 22],
-  iconAnchor: [11, 11],
-});
+const makeVehicleIcon = (emoji: string) =>
+  new L.DivIcon({
+    className: "",
+    html: `<div style="font-size:24px;line-height:1;transform:translateY(-2px);filter:drop-shadow(0 4px 6px rgba(0,0,0,0.3))">${emoji}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+  });
 
 export function MapViewClient({
   center,
   zoom = 13,
   points = [],
   route,
+  traveledRoute,
   className = "h-48 w-full",
   showPlane,
   planePos,
+  vehicleEmoji = "✈️",
 }: {
   center: [number, number];
   zoom?: number;
   points?: { lat: number; lng: number; label?: string }[];
   route?: [number, number][];
+  traveledRoute?: [number, number][];
   className?: string;
   showPlane?: boolean;
   planePos?: [number, number];
+  vehicleEmoji?: string;
 }) {
   return (
     <div className={className + " overflow-hidden rounded-2xl border border-border"}>
@@ -48,9 +53,12 @@ export function MapViewClient({
           <Marker key={i} position={[p.lat, p.lng]} icon={defaultIcon} />
         ))}
         {route && route.length > 1 ? (
-          <Polyline positions={route} pathOptions={{ color: "#0770E3", weight: 4, opacity: 0.7 }} />
+          <Polyline positions={route} pathOptions={{ color: "#94a3b8", weight: 4, opacity: 0.5, dashArray: "6 8" }} />
         ) : null}
-        {showPlane && planePos ? <Marker position={planePos} icon={planeIcon} /> : null}
+        {traveledRoute && traveledRoute.length > 1 ? (
+          <Polyline positions={traveledRoute} pathOptions={{ color: "#0770E3", weight: 5, opacity: 0.9 }} />
+        ) : null}
+        {showPlane && planePos ? <Marker position={planePos} icon={makeVehicleIcon(vehicleEmoji)} /> : null}
       </MapContainer>
     </div>
   );
