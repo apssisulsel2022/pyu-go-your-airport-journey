@@ -98,12 +98,21 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-const HIDE_NAV_PREFIXES = ["/auth", "/shuttle/seats", "/shuttle/payment", "/shuttle/ticket", "/shuttle/tracking", "/ride/tracking"];
+const HIDE_NAV_PREFIXES = ["/auth", "/shuttle/seats", "/shuttle/payment", "/shuttle/ticket", "/shuttle/tracking", "/ride/tracking", "/admin"];
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const loc = useLocation();
+  const isAdmin = loc.pathname.startsWith("/admin");
   const hideNav = HIDE_NAV_PREFIXES.some((p) => loc.pathname.startsWith(p));
+
+  if (isAdmin) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
