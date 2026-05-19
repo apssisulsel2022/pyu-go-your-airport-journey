@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { BookingStepper } from "@/components/BookingStepper";
 import { MapView } from "@/components/MapView";
 import { pickupPoints, KNO_AIRPORT } from "@/lib/mock-data";
+import { useBooking } from "@/store/booking";
 
 
 export const Route = createFileRoute("/shuttle/pickup")({
@@ -18,6 +19,7 @@ function PickupPage() {
   const [rayon, setRayon] = useState<string>("Semua");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const nav = useNavigate();
+  const setPickup = useBooking((s) => s.setPickup);
 
   const rayons = ["Semua", "Rayon A", "Rayon B", "Rayon C"];
   const filtered = pickupPoints.filter(
@@ -195,17 +197,28 @@ function PickupPage() {
               <div className="truncate text-[11px] text-muted-foreground">
                 {selected.distanceKm} km • ETA {selected.etaMin} mnt ke titik
               </div>
-              <button
-                onClick={() =>
-                  nav({
-                    to: "/shuttle/pickup/$pointId",
-                    params: { pointId: selected.id },
-                  })
-                }
-                className="mt-2 w-full rounded-full bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-card"
-              >
-                Lihat rute & detail
-              </button>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() =>
+                    nav({
+                      to: "/shuttle/pickup/$pointId",
+                      params: { pointId: selected.id },
+                    })
+                  }
+                  className="flex-1 rounded-full border border-border bg-secondary py-2.5 text-xs font-bold text-foreground"
+                >
+                  Lihat rute
+                </button>
+                <button
+                  onClick={() => {
+                    setPickup(selected);
+                    nav({ to: "/shuttle/service" });
+                  }}
+                  className="flex-[1.4] rounded-full bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-card"
+                >
+                  Pilih & lanjut
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
