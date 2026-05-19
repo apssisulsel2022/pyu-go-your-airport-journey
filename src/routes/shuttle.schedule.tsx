@@ -16,10 +16,12 @@ export const Route = createFileRoute("/shuttle/schedule")({
 });
 
 function SchedulePage() {
-  const { pickup, tier, setSchedule, setDate } = useBooking();
+  const { pickup, tier, setSchedule, setDate, date } = useBooking();
   const vehicles = useAdmin((s) => s.vehicles);
   const nav = useNavigate();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(
+    date ? new Date(date) : new Date(),
+  );
 
   if (!pickup) return <Navigate to="/shuttle/pickup" />;
   if (!tier) return <Navigate to="/shuttle/service" />;
@@ -27,18 +29,24 @@ function SchedulePage() {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(new Date(), i)), []);
   const schedules = getSchedulesForPickup(pickup.id).filter((s) => s.className === tier);
 
+  const pickDate = (d: Date) => {
+    setSelectedDate(d);
+    setDate(format(d, "yyyy-MM-dd"));
+  };
+
   return (
     <div className="min-h-screen bg-secondary/40">
       <PageHeader title="Pilih Kendaraan" subtitle={`${TIER_LABEL[tier]} • ${pickup.name} → ${KNO_AIRPORT.code}`} />
+      <BookingStepper />
 
       {/* Date strip */}
-      <div className="no-scrollbar sticky top-[57px] z-20 flex gap-2 overflow-x-auto border-b border-border bg-card/95 px-4 py-3 backdrop-blur">
+      <div className="no-scrollbar sticky top-[120px] z-10 flex gap-2 overflow-x-auto border-b border-border bg-card/95 px-4 py-3 backdrop-blur">
         {days.map((d) => {
           const active = isSameDay(d, selectedDate);
           return (
             <button
               key={d.toISOString()}
-              onClick={() => setSelectedDate(d)}
+              onClick={() => pickDate(d)}
               className={`flex min-w-[58px] flex-col items-center rounded-xl border px-2.5 py-2 text-xs transition ${
                 active
                   ? "border-primary bg-primary text-primary-foreground shadow-card"
