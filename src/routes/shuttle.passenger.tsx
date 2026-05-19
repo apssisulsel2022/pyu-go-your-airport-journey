@@ -27,13 +27,19 @@ function PassengerPage() {
   const phoneOk = /^[0-9+\s-]{10,16}$/.test(phone.trim());
   const valid = nameOk && phoneOk;
 
+  const normalizePhone = (p: string) => {
+    const trimmed = p.trim().replace(/\s|-/g, "");
+    if (trimmed.startsWith("0")) return "+62" + trimmed.slice(1);
+    return trimmed;
+  };
+
   const submit = () => {
     setTouched(true);
     if (!valid) {
       toast.error("Mohon lengkapi data dengan benar");
       return;
     }
-    setPassenger(name.trim(), phone.trim());
+    setPassenger(name.trim(), normalizePhone(phone));
     nav({ to: "/shuttle/payment" });
   };
 
