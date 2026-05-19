@@ -1,0 +1,259 @@
+import { useRef, useState, useCallback } from "react";
+import type { SeatMarker } from "@/store/admin";
+import { renumberSeatMap, countSeatsInMap } from "@/store/admin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Upload, Trash2, RotateCw, X, Armchair, DoorOpen, Car } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type Tool = "seat" | "driver" | "door";
+
+interface Props {
+  imageUrl?: string;
+  markers: SeatMarker[];
+  onImageChange: (url: string | undefined) => void;
+  onMarkersChange: (m: SeatMarker[]) => void;
+}
+
+const toolMeta: Record<Tool, { label: string; icon: typeof Armchair; cls: string }> = {
+  seat: { label: "Kursi", icon: Armchair, cls: "bg-primary text-primary-foreground" },
+  driver: { label: "Sopir", icon: Car, cls: "bg-foreground text-background" },
+  door: { label: "Pintu", icon: DoorOpen, cls: "bg-amber-400 text-amber-950" },
+};
+
+// Compress image via canvas to keep localStorage happy.
+async function fileToDataUrl(file: File, maxDim = 1200): Promise<string> {
+  const dataUrl = await new Promise<string>((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result as string);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+  const img = await new Promise<HTMLImageElement>((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const w = Math.round(img.width * scale);
+  const h = Math.round(img.height * scale);
+  const cv = document.createElement("canvas");
+  cv.width = w;
+  cv.height = h;
+  cv.getContext("2d")!.drawImage(img, 0, 0, w, h);
+  return cv.toDataURL("image/jpeg", 0.82);
+}
+
+export function SeatImageEditor({ imageUrl, markers, onImageChange, onMarkersChange }: Props) {
+  const [tool, setTool] = useState<Tool>("seat");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef<{ id: string; offX: number; offY: number } | null>(null);
+
+  const handleUpload = async (file: File) => {
+    const url = await fileToDataUrl(file);
+    onImageChange(url);
+  };
+
+  const getRel = (e: { clientX: number; clientY: number }) => {
+    const r = stageRef.current!.getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+    };
+  };
+
+  const onStageClick = (e: React.MouseEvent) => {
+    if (!imageUrl) return;
+    if (e.target !== e.currentTarget && (e.target as HTMLElement).dataset.marker) return;
+    const { x, y } = getRel(e);
+    const id = "m-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+    const next: SeatMarker = tool === "seat" ? { id, x, y, kind: "seat", label: "?" } : { id, x, y, kind: tool };
+    const merged = [...markers, next];
+    onMarkersChange(tool === "seat" ? renumberSeatMap(merged) : merged);
+    setSelectedId(id);
+  };
+
+  const startDrag = (e: React.PointerEvent, id: string) => {
+    e.stopPropagation();
+    const m = markers.find((x) => x.id === id);
+    if (!m) return;
+    const r = stageRef.current!.getBoundingClientRect();
+    dragging.current = {
+      id,
+      offX: e.clientX - (r.left + m.x * r.width),
+      offY: e.clientY - (r.top + m.y * r.height),
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setSelectedId(id);
+  };
+
+  const onMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!dragging.current) return;
+      const { id, offX, offY } = dragging.current;
+      const r = stageRef.current!.getBoundingClientRect();
+      const x = Math.min(1, Math.max(0, (e.clientX - offX - r.left) / r.width));
+      const y = Math.min(1, Math.max(0, (e.clientY - offY - r.top) / r.height));
+      onMarkersChange(markers.map((m) => (m.id === id ? { ...m, x, y } : m)));
+    },
+    [markers, onMarkersChange],
+  );
+
+  const endDrag = () => {
+    dragging.current = null;
+  };
+
+  const removeMarker = (id: string) => {
+    const next = markers.filter((m) => m.id !== id);
+    onMarkersChange(renumberSeatMap(next));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const updateLabel = (id: string, label: string) => {
+    onMarkersChange(markers.map((m) => (m.id === id && m.kind === "seat" ? { ...m, label } : m)));
+  };
+
+  const selected = markers.find((m) => m.id === selectedId);
+
+  return (
+    <div className="space-y-3">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="inline-flex">
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleUpload(f);
+              e.target.value = "";
+            }}
+          />
+          <span className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent">
+            <Upload className="h-4 w-4" /> {imageUrl ? "Ganti gambar" : "Upload denah"}
+          </span>
+        </label>
+
+        <div className="flex items-center gap-1 rounded-md border border-input p-1">
+          {(Object.keys(toolMeta) as Tool[]).map((t) => {
+            const Icon = toolMeta[t].icon;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTool(t)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition",
+                  tool === t ? toolMeta[t].cls : "text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" /> {toolMeta[t].label}
+              </button>
+            );
+          })}
+        </div>
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onMarkersChange(renumberSeatMap(markers))}
+          disabled={!markers.length}
+        >
+          <RotateCw className="mr-1 h-3.5 w-3.5" /> Renumber
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive"
+          onClick={() => onMarkersChange([])}
+          disabled={!markers.length}
+        >
+          <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus semua
+        </Button>
+        <div className="ml-auto text-xs text-muted-foreground">{countSeatsInMap(markers)} kursi</div>
+      </div>
+
+      {/* Stage */}
+      {!imageUrl ? (
+        <div className="flex h-64 items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 text-sm text-muted-foreground">
+          Upload denah kendaraan (top-down) untuk mulai menaruh kursi.
+        </div>
+      ) : (
+        <div
+          ref={stageRef}
+          className="relative w-full select-none overflow-hidden rounded-2xl border-2 border-border bg-muted/30"
+          onClick={onStageClick}
+          onPointerMove={onMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          <img src={imageUrl} alt="Denah kendaraan" className="block h-auto w-full" draggable={false} />
+          {markers.map((m) => {
+            const meta = toolMeta[m.kind];
+            const Icon = meta.icon;
+            const sel = m.id === selectedId;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                data-marker="1"
+                onPointerDown={(e) => startDrag(e, m.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedId(m.id);
+                }}
+                className={cn(
+                  "absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 cursor-grab items-center justify-center rounded-full border-2 text-xs font-bold shadow-md transition active:cursor-grabbing",
+                  meta.cls,
+                  sel ? "ring-2 ring-offset-2 ring-ring scale-110" : "border-background/80",
+                )}
+                style={{ left: `${m.x * 100}%`, top: `${m.y * 100}%` }}
+              >
+                {m.kind === "seat" ? m.label : <Icon className="h-3.5 w-3.5" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Selected marker editor */}
+      {selected && (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-3">
+          <div className="text-xs font-medium text-muted-foreground">
+            {toolMeta[selected.kind].label}
+          </div>
+          {selected.kind === "seat" && (
+            <>
+              <span className="text-xs text-muted-foreground">Label</span>
+              <Input
+                value={selected.label ?? ""}
+                onChange={(e) => updateLabel(selected.id, e.target.value)}
+                className="h-8 w-20"
+              />
+            </>
+          )}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-auto text-destructive"
+            onClick={() => removeMarker(selected.id)}
+          >
+            <Trash2 className="mr-1 h-3.5 w-3.5" /> Hapus
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setSelectedId(null)}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+
+      {imageUrl && (
+        <p className="text-xs text-muted-foreground">
+          Pilih tool lalu klik gambar untuk menaruh marker. Drag marker untuk reposisi. Klik marker untuk edit/hapus.
+        </p>
+      )}
+    </div>
+  );
+}
