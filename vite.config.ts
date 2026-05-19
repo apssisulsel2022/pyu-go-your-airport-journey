@@ -12,4 +12,28 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
+  vite: {
+    optimizeDeps: {
+      include: [
+        "@radix-ui/react-alert-dialog",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-label",
+        "@radix-ui/react-select",
+        "@radix-ui/react-separator",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-tooltip",
+        "class-variance-authority",
+        "clsx",
+        "date-fns",
+        "date-fns/locale",
+        "framer-motion",
+        "lucide-react",
+        "qrcode.react",
+        "sonner",
+        "tailwind-merge",
+        "zustand",
+        "zustand/middleware",
+      ],
+    },
+  },
 });
