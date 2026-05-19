@@ -29,6 +29,7 @@ function TicketPage() {
       setDownloading(true);
       // Wait a frame so any "capture mode" class swaps apply before snapshot.
       await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(ticketRef.current, {
         pixelRatio: 2,
         cacheBust: true,
