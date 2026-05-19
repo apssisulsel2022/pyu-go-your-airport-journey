@@ -1,117 +1,48 @@
-# Admin Panel — Phase 3a (Frontend, Mock Data)
+# Image-Based Seat Editor
 
-Build a mobile-first but desktop-optimized admin panel for PYU - GO to manage pickup points, schedules, vehicle/seat layouts, and bookings. This phase stays frontend-only on the existing mock data store (no Supabase yet). When Phase 2 (Lovable Cloud) lands, the same screens swap their data source to server functions.
+Ganti seat editor grid (`SeatLayoutGrid`) dengan editor visual berbasis gambar denah kendaraan yang di-upload admin. Admin menaruh marker kursi (dan elemen lain: pintu, supir, lorong) langsung di atas foto/sketsa kendaraan.
 
-## Scope
+## Alur Admin
 
-In:
-- Admin shell with sidebar nav + KPI dashboard
-- CRUD UI for Pickup Points, Schedules, Vehicles (with seat layout editor)
-- Bookings list with filters + detail drawer + status actions (confirm / cancel / refund)
-- Mock auth gate (admin role flag in local store)
+1. Di halaman **Vehicles**, saat add/edit kendaraan, admin upload gambar denah (top-down) kendaraan.
+2. Gambar tampil sebagai canvas. Admin klik di atas gambar untuk menambah marker kursi pada posisi (x, y) relatif (0–1 terhadap lebar/tinggi gambar — anti rusak saat resize).
+3. Setiap marker bisa di-drag untuk reposisi, di-klik untuk edit (label/nomor, tipe: seat / driver / door), atau dihapus.
+4. Tombol toolbar: pilih tipe marker aktif (Seat, Driver, Door), Auto-number seats, Clear all, Undo.
+5. Simpan → tersimpan di store admin bersama URL gambar.
 
-Out (later phases):
-- Real Supabase tables, RLS, server functions
-- Drivers, routes, rides heatmap, revenue Recharts (Phase 3b)
-- Real payments / refunds
+## Tampilan Booking (read-only)
 
-## Routes
+Komponen baru `SeatImageMap` me-render gambar + marker. Marker kursi diberi state: available / selected / booked, dengan warna sesuai design tokens. Dipakai di flow pemilihan kursi penumpang (menggantikan grid lama untuk kendaraan yang punya gambar).
+
+## Perubahan Data
+
+`VehicleTemplate` ditambah field:
+- `imageUrl?: string` — data URL gambar yang di-upload (disimpan via persist zustand).
+- `seatMap?: SeatMarker[]` — array marker.
 
 ```text
-/admin                  -> dashboard (KPIs + recent bookings)
-/admin/pickup-points    -> list + create/edit/delete
-/admin/schedules        -> list (filter by pickup) + create/edit/delete
-/admin/vehicles         -> list of vehicle templates + seat layout editor
-/admin/bookings         -> table with filters; row -> detail drawer
+SeatMarker = {
+  id: string
+  x: number   // 0..1
+  y: number   // 0..1
+  kind: "seat" | "driver" | "door"
+  label?: string  // hanya untuk kind=seat
+}
 ```
 
-All under a new `_admin` layout route (`src/routes/_admin.tsx`) that:
-- Renders an `AdminSidebar` (collapsible, lucide icons) + top bar with `SidebarTrigger`
-- Gates access via a simple `useAdminGuard()` hook reading `localStorage.pyu_role === "admin"` (toggle from `/account` for demo). Redirects to `/auth/login` otherwise.
-- Bottom nav is hidden on admin routes.
+Field lama (`layout`, `rows`, `cols`) tetap ada sebagai fallback untuk kendaraan tanpa gambar.
 
-## Data layer
+## File yang Dibuat / Diubah
 
-New `src/store/admin.ts` (Zustand + `persist`) holds editable copies of:
-- `pickupPoints`
-- `vehicles` (id, name, type, plate, `seatLayout: SeatCell[][]`)
-- `schedules` (extended: vehicleId fk)
-- `bookings` (seeded with ~25 realistic rows: passenger, pickup, schedule, seats, status, amount, createdAt)
+- Baru: `src/components/admin/SeatImageEditor.tsx` — canvas editor (upload, click-to-place, drag, edit, delete).
+- Baru: `src/components/admin/SeatImageMap.tsx` — viewer read-only untuk halaman booking.
+- Ubah: `src/store/admin.ts` — tambah `imageUrl`, `seatMap`, tipe `SeatMarker`, helper hitung jumlah kursi dari marker.
+- Ubah: `src/routes/admin.vehicles.tsx` — form vehicle pakai `SeatImageEditor` (tab antara "Image map" dan "Grid lama" agar tidak break data lama).
+- Opsional: di flow penumpang yang menampilkan denah kursi, render `SeatImageMap` kalau `imageUrl` ada, kalau tidak fallback ke `SeatLayoutGrid`.
 
-Seed from existing `mock-data.ts` on first load. All mutations go through store actions so the user-facing booking flow stays consistent.
+## Catatan Teknis
 
-`SeatCell` model:
-```ts
-type SeatCell =
-  | { kind: "seat"; label: string }
-  | { kind: "aisle" }
-  | { kind: "driver" }
-  | { kind: "door" }
-  | { kind: "empty" };
-```
-Grid is rows x cols (e.g. Hiace 5x3). Existing `SeatPicker` is refactored to render from `seatLayout` instead of hard-coded SVG so the editor and user view stay in sync.
-
-## Key screens
-
-### Dashboard (`/admin`)
-- 4 KPI cards: Bookings today, Revenue today, Seat occupancy %, Active schedules
-- "Recent bookings" table (last 10) with status pill
-- "Top pickup points" bar list
-
-### Pickup Points (`/admin/pickup-points`)
-- Searchable table: rayon, name, city, distance, ETA, lat/lng
-- "Add point" + row edit via shadcn `Dialog` with RHF + Zod
-- Delete confirms via `AlertDialog`
-
-### Schedules (`/admin/schedules`)
-- Filter by pickup point + vehicle type + date
-- Table: time, route, vehicle, class, price, booked/total, status
-- Create/edit dialog with pickup + vehicle selectors, time pickers, price, class
-- Live "seats booked" read-only (derived from bookings)
-
-### Vehicles + Seat Layout (`/admin/vehicles`)
-- Card grid of vehicle templates (Hiace / Elf / Minibus + custom)
-- Edit screen: name, type, plate, class, rows/cols inputs, then an interactive grid where each cell cycles `seat -> aisle -> driver -> door -> empty` on click. Seat labels auto-number left-to-right, top-to-bottom; "Renumber" button rebuilds.
-- Live preview of `SeatPicker` rendering the layout
-- Save updates store; schedules referencing this vehicle re-render with new layout
-
-### Bookings (`/admin/bookings`)
-- Filters: status, date range, pickup, search by passenger / booking code
-- Table with pagination (10/page)
-- Row click opens `Sheet` (right drawer) with full booking detail: passenger, contact, pickup, schedule, seats (rendered via mini SeatPicker preview), payment, timeline
-- Actions: Confirm, Mark Boarded, Cancel (+ reason), Refund (mock). Status changes update store + show toast.
-
-## Components
-
-New under `src/components/admin/`:
-- `AdminSidebar.tsx`
-- `AdminShell.tsx` (header + main wrapper)
-- `KpiCard.tsx`
-- `DataTable.tsx` (lightweight, shadcn table + pagination)
-- `StatusBadge.tsx`
-- `PickupPointDialog.tsx`
-- `ScheduleDialog.tsx`
-- `VehicleEditor.tsx` (with `SeatLayoutGrid.tsx`)
-- `BookingDetailSheet.tsx`
-
-Refactor:
-- `src/components/SeatPicker.tsx` -> driven by `SeatCell[][]` from the vehicle. Falls back to default Hiace layout if none provided. User shuttle flow updated to pass `vehicle.seatLayout`.
-
-## Design
-
-- Reuse existing tokens from `src/styles.css` (Traveloka blue, soft shadows, xl/2xl radii). Admin shell uses `bg-muted/30` canvas with white cards.
-- Plus Jakarta Sans across the board.
-- Framer Motion on dialog/sheet open, table row hover, KPI count-up.
-- Empty states with illustrated placeholders.
-
-## Technical details
-
-- Stack: existing React + TS + Tailwind + shadcn + Zustand + RHF/Zod + Framer Motion. No new deps required.
-- Routing: TanStack file routes. `_admin.tsx` is a pathless layout with `<Outlet />`. Children: `_admin/index.tsx`, `_admin/pickup-points.tsx`, `_admin/schedules.tsx`, `_admin/vehicles.tsx`, `_admin/vehicles.$id.tsx`, `_admin/bookings.tsx`.
-- Sidebar uses shadcn `sidebar` primitives with `collapsible="icon"`.
-- All mutations are local (Zustand persist) — clearly labeled "Demo mode" in the header until Phase 2 backend wiring.
-- Root layout hides `BottomNav` when `location.pathname.startsWith("/admin")`.
-
-## Open question
-
-The plan assumes the seat picker should become layout-driven now so the editor is meaningful. If you'd rather keep `SeatPicker` as-is and just expose `rows/cols/plate` for vehicles (no visual editor), say so and I'll trim the Vehicles screen accordingly.
+- Upload pakai `<input type="file" accept="image/*">` → `FileReader.readAsDataURL` → simpan sebagai data URL. Cukup untuk MVP tanpa backend; ukuran dibatasi (mis. max 1 MB, compress via canvas kalau lebih besar) supaya `localStorage` zustand persist tidak meledak.
+- Koordinat marker disimpan sebagai rasio (0–1) terhadap natural size gambar agar tetap akurat saat container di-resize / responsif.
+- Drag pakai pointer events native (tanpa dependency tambahan).
+- Marker render absolute di dalam wrapper `position: relative` yang mengikuti aspect-ratio gambar.
