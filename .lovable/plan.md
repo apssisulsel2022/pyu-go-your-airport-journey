@@ -1,83 +1,54 @@
-# Refinement Flow Shuttle
+# Halaman Pratinjau Rute Titik Jemput → KNO
 
-Fokus penyempurnaan UX dan konsistensi visual di seluruh alur pemesanan shuttle (`/shuttle/*`) tanpa mengubah logika bisnis inti.
+Saat pengguna memilih titik jemput, alih-alih langsung lanjut ke pemilihan layanan, arahkan ke halaman pratinjau rute berisi peta jalur titik jemput → Bandara Kualanamu (KNO) beserta informasi detail perjalanan. Pengguna mengkonfirmasi titik dari halaman ini sebelum lanjut ke step "Layanan".
 
-## Temuan utama
-
-1. **Tidak ada step indicator** — pengguna tidak tahu posisinya di tahap mana (Pickup → Service → Jadwal → Kursi → Penumpang → Bayar → Tiket).
-2. **Data penumpang tidak pernah diisi** — store sudah punya `setPassenger`, tapi tidak ada langkah input nama/telp. Ini muncul kosong di e-ticket.
-3. **Pickup list**: mini map dirender untuk SETIAP kartu → berat di list panjang dan menarik fokus dari konten. Sebaiknya map hanya untuk kartu yang dipilih / di-expand.
-4. **Service tier**: kartu tidak menampilkan jam keberangkatan paling awal & durasi rata-rata, padahal info ini berguna untuk memutuskan.
-5. **Schedule page**: pemilihan tanggal hanya dekoratif (jadwal tidak benar-benar difilter per tanggal). Tambahkan label hari & set tanggal langsung ke store ketika berubah; tampilkan empty state per tanggal jika ada.
-6. **Layout inconsistency**: beberapa halaman menggunakan sticky footer `max-w-md` (kursi, bayar) sementara konten utama full-width → footer terlihat menggantung di tengah pada layar lebar. Standarkan container `max-w-md mx-auto` untuk seluruh flow mobile-style.
-7. **Payment**: tidak menampilkan jumlah penumpang, tanggal, atau ringkasan jemput. Promo tidak ada feedback "berlaku/invalid".
-8. **Ticket**: tombol **Bagikan** non-fungsional; tombol Download bisa gagal karena ikon emoji & gradient di latar belakang. Stub atas tiket pakai `bg-hero-gradient` yang bertabrakan saat ter-export ke PNG.
-9. **Tracking**: ETA dihitung dari sisa simulasi (`DURATION_SEC * (1 - progress)`), bukan dari `remainingKm / speed`. Akibatnya ETA tidak berubah saat kecepatan berubah. Kecil tapi terasa "tidak hidup".
-
-## Rencana perubahan
-
-### A. Komponen baru
-
-- `src/components/BookingStepper.tsx` — stepper kompak 6 langkah (Jemput, Service, Jadwal, Kursi, Penumpang, Bayar). Otomatis menyorot langkah aktif berdasarkan `useLocation`.
-- `src/components/ShuttleShell.tsx` (opsional ringan) — wrapper `max-w-md mx-auto` agar layout konsisten. Atau cukup tambah class di tiap route.
-
-### B. Route changes
-
-- `shuttle.pickup.tsx`
-  - Hapus mini-map per kartu, ganti dengan badge jarak & ETA yang lebih besar.
-  - Tampilkan mini-map satu kali di bawah list untuk kartu yang ter-highlight (state lokal `selectedId`), lalu CTA "Lanjut".
-  - Tambah `BookingStepper` di atas.
-
-- `shuttle.service.tsx`
-  - Tambah info "Berangkat mulai pukul {min}", "Durasi ±1j 30m" di tiap kartu.
-  - Tambah `BookingStepper`.
-
-- `shuttle.schedule.tsx`
-  - Filter jadwal juga oleh tanggal (gunakan field `daysAvailable` jika ada di mock, fallback semua hari). Empty state per tanggal.
-  - Set `setDate` saat user mengganti tanggal (sekarang hanya di-set saat klik jadwal).
-  - Tambah `BookingStepper`.
-
-- `shuttle.seats.tsx`
-  - Bungkus konten utama dengan `max-w-md mx-auto`.
-  - Tambah `BookingStepper`.
-  - CTA "Lanjut ke Penumpang" (sebelumnya langsung ke Pembayaran).
-
-- `shuttle.passenger.tsx` **(baru)**
-  - Form nama & nomor HP per kursi (atau minimal 1 kontak utama untuk semua kursi).
-  - Validasi simpel: nama ≥ 3 huruf, telp 10–14 digit.
-  - Simpan via `setPassenger`, lanjut ke `/shuttle/payment`.
-
-- `shuttle.payment.tsx`
-  - Ringkasan: tanggal, jam, jumlah penumpang, nama kontak.
-  - Promo: tampilkan badge "Berhasil"/"Kode tidak valid" setelah submit.
-  - Standarkan `max-w-md mx-auto`.
-  - Tambah `BookingStepper`.
-
-- `shuttle.ticket.tsx`
-  - Tombol Bagikan: gunakan `navigator.share` jika tersedia, fallback copy link/kode.
-  - Saat download: bekukan gradient di stub atas dengan warna solid `--primary` agar PNG bersih. Sembunyikan elemen perforation gradient saat capture (gunakan ref + class `capture-clean`).
-  - Tampilkan nama penumpang utama.
-
-- `shuttle.tracking.tsx`
-  - Hitung `etaSec = remainingKm / max(15, speed) * 3600` (clamp), tampilkan tetap berdampingan dengan progress simulasi.
-  - Sisanya tetap; halaman sudah solid.
-
-### C. Routing
-
-Tambah file route baru `src/routes/shuttle.passenger.tsx` (TanStack file-based routing akan auto-generate). Update transisi di `shuttle.seats.tsx` dan `shuttle.payment.tsx` agar urutannya:
+## Alur Baru
 
 ```text
-pickup → service → schedule → seats → passenger → payment → ticket → tracking
+Pickup (pilih kartu)
+   │  navigate dengan param :pointId
+   ▼
+Pickup Route Preview  ── Konfirmasi ──▶  Service ─▶ Schedule ─▶ ...
+   │
+   └── Ganti titik (kembali ke /shuttle/pickup)
 ```
 
-### D. Out of scope
+Sheet bawah kecil di halaman pickup tetap ada untuk preview cepat, tetapi tombol utamanya menjadi **"Lihat rute & detail"** yang membuka halaman pratinjau. Tombol "Pilih titik ini" dipindah ke halaman pratinjau agar keputusan diambil setelah melihat rute lengkap.
 
-- Integrasi backend / Lovable Cloud.
-- Real-time GPS atau routing API beneran.
-- Perubahan admin panel.
+## Halaman Baru: `/shuttle/pickup/$pointId`
 
-## Catatan teknis singkat
+File: `src/routes/shuttle.pickup.$pointId.tsx`
 
-- Stepper murni client-side via `useLocation().pathname`.
-- Form penumpang pakai `useState` lokal, tidak butuh react-hook-form.
-- Untuk capture tiket bersih: render varian "print-safe" saat `downloading=true` (swap class gradient → solid sebelum `toPng`).
+Isi:
+- Header "Rute ke KNO" + subjudul nama titik jemput.
+- `BookingStepper` (tetap di step Pickup).
+- **Peta besar** (≈ 280px) menggunakan `MapView` dengan:
+  - `points`: titik jemput + KNO
+  - `route`: garis lurus titik jemput → KNO
+  - `vehicleEmoji`: 🚐 pada titik jemput
+  - auto-fit center antara dua titik, zoom 10–11
+- **Kartu Detail Perjalanan** berisi:
+  - Origin: nama titik jemput, alamat lengkap, rayon, kota
+  - Destination: KNO Bandara Internasional Kualanamu
+  - Grid metrik: Jarak (`distanceKm`), ETA jemput (`etaMin`), Estimasi ke KNO (`distanceKm * 2.5 + 30` menit), Estimasi tiba (jam aktual = sekarang + estimasi)
+  - Catatan operasional: koordinat GPS, jam operasional jemput (mock: 04:00–22:00), nomor PIC area (mock per rayon)
+- **Kartu Petunjuk Lokasi Jemput**: deskripsi singkat landmark + tombol "Buka di Google Maps" (link `https://www.google.com/maps/dir/?api=1&origin=lat,lng&destination=KNO_lat,KNO_lng`).
+- **CTA sticky bawah**:
+  - Sekunder: "Ganti titik" → kembali ke `/shuttle/pickup`
+  - Primer: "Pilih titik ini & lanjut" → `setPickup(point)` lalu `navigate("/shuttle/service")`
+
+## Perubahan File
+
+- **Baru** `src/routes/shuttle.pickup.$pointId.tsx` — halaman pratinjau rute.
+- **Edit** `src/routes/shuttle.pickup.tsx`:
+  - Bottom sheet tetap menampilkan PickupMiniMap + ringkasan singkat.
+  - Tombol utama di sheet menjadi "Lihat rute & detail" → `navigate({ to: "/shuttle/pickup/$pointId", params: { pointId: selected.id } })`.
+  - Hapus `setPickup` di sheet (pindah ke halaman pratinjau).
+- **Tidak diubah**: `MapView`, `MapViewClient`, `PickupMiniMap`, store booking, route lain.
+
+## Catatan Teknis
+
+- Param route diambil dengan `Route.useParams()`; jika `pointId` tidak ditemukan di `pickupPoints`, render `notFoundComponent` sederhana dengan link kembali ke `/shuttle/pickup`.
+- Sertakan `errorComponent` minimal sesuai konvensi TanStack Start.
+- Tidak ada perubahan store / backend; semua data berasal dari `pickupPoints` & `KNO_AIRPORT` di `src/lib/mock-data.ts`.
+- Link Google Maps menggunakan URL publik (tidak memerlukan API key).
