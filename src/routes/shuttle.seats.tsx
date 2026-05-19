@@ -23,12 +23,14 @@ function SeatsPage() {
 
   const total = selectedSeats.length * schedule.price;
 
-  // Match the admin-defined vehicle (with optional image map) to this schedule.
+  // Match the admin-defined vehicle to this schedule: prefer exact plate,
+  // then type+tier, then type alone.
   const adminVehicle =
     vehicles.find((v) => v.plate === schedule.plate) ??
+    vehicles.find((v) => v.type === schedule.vehicleType && v.tier === schedule.className) ??
     vehicles.find((v) => v.type === schedule.vehicleType);
 
-  const useImageMap = !!(adminVehicle?.imageUrl && adminVehicle?.seatMap?.length);
+  const useImageMap = !!(adminVehicle?.seatMap && adminVehicle.seatMap.length > 0);
 
   const handleToggle = (seat: string) => {
     if (!selectedSeats.includes(seat) && selectedSeats.length >= MAX_SELECT) {
@@ -54,7 +56,7 @@ function SeatsPage() {
               <div className="h-px flex-1 bg-border" />
             </div>
             <SeatImageMap
-              imageUrl={adminVehicle!.imageUrl!}
+              imageUrl={adminVehicle!.imageUrl}
               markers={adminVehicle!.seatMap!}
               selected={selectedSeats}
               booked={schedule.seatsBooked}
