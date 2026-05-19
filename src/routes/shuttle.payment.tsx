@@ -24,7 +24,7 @@ const VALID_PROMOS: Record<string, number> = {
 };
 
 function PaymentPage() {
-  const { pickup, schedule, selectedSeats, setBookingCode, date, passengerName, passengerPhone } =
+  const { pickup, schedule, selectedSeats, setBookingCode, setPayment, date, passengerName, passengerPhone } =
     useBooking();
   const nav = useNavigate();
   const [method, setMethod] = useState("ewallet");
@@ -36,10 +36,12 @@ function PaymentPage() {
   if (!pickup || !schedule || selectedSeats.length === 0)
     return <Navigate to="/shuttle/pickup" />;
 
+  const EWALLET_BALANCE = 250000;
   const subtotal = selectedSeats.length * schedule.price;
   const discount = appliedPromo ? Math.floor(subtotal * appliedPromo.rate) : 0;
   const fee = 2500;
   const total = subtotal - discount + fee;
+  const ewalletShort = method === "ewallet" && total > EWALLET_BALANCE;
 
   const applyPromo = () => {
     const code = promo.trim().toUpperCase();
@@ -54,11 +56,22 @@ function PaymentPage() {
     }
   };
 
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromo("");
+    setPromoError(null);
+  };
+
   const pay = async () => {
+    if (ewalletShort) {
+      toast.error("Saldo PYU Pay tidak cukup. Pilih metode lain.");
+      return;
+    }
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1400));
     const code = "PYU" + Math.random().toString(36).slice(2, 8).toUpperCase();
     setBookingCode(code);
+    setPayment(total, appliedPromo?.code ?? null);
     nav({ to: "/shuttle/ticket" });
   };
 
