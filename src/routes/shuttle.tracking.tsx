@@ -45,10 +45,21 @@ const phaseOf = (p: number): Phase => {
 
 const PHASE_TOAST: Record<Phase, string | null> = {
   scheduled: null,
-  to_pickup: "Driver dalam perjalanan menuju kamu",
-  boarding: "Shuttle tiba di titik jemput. Silakan naik.",
-  to_airport: "Boarding selesai, menuju KNO",
-  arrived: "Shuttle telah tiba di KNO",
+  to_pickup: "Armada dalam perjalanan menuju titik jemput",
+  boarding: "Armada tiba di titik jemput. Silakan naik.",
+  to_airport: "Armada berangkat menuju Bandara KNO",
+  arrived: "Armada telah tiba di Bandara KNO",
+};
+
+const PHASE_META: Record<
+  Phase,
+  { label: string; tone: string; dot: string }
+> = {
+  scheduled: { label: "Dijadwalkan", tone: "bg-muted text-foreground", dot: "bg-muted-foreground" },
+  to_pickup: { label: "Menuju titik jemput", tone: "bg-primary/15 text-primary", dot: "bg-primary" },
+  boarding: { label: "Tiba di titik jemput", tone: "bg-warning/15 text-warning", dot: "bg-warning" },
+  to_airport: { label: "Berangkat menuju KNO", tone: "bg-primary/15 text-primary", dot: "bg-primary" },
+  arrived: { label: "Tiba di Bandara KNO", tone: "bg-success/15 text-success", dot: "bg-success" },
 };
 
 const DURATION_SEC = 180; // total simulasi
@@ -154,18 +165,41 @@ function TrackingPage() {
   const fullRoute: LatLng[] = [driverStart, pickupPos, airportPos];
 
   const phaseHeadline: Record<Phase, string> = {
-    scheduled: "Driver dijadwalkan",
-    to_pickup: "Driver menuju kamu",
-    boarding: "Boarding di titik jemput",
-    to_airport: "Dalam perjalanan ke KNO",
-    arrived: "Tiba di KNO",
+    scheduled: "Armada dijadwalkan",
+    to_pickup: "Armada menuju titik jemput",
+    boarding: "Armada tiba di titik jemput",
+    to_airport: "Berangkat menuju Bandara KNO",
+    arrived: "Tiba di Bandara KNO",
   };
+  const meta = PHASE_META[phase];
 
   return (
     <div className="min-h-screen bg-secondary/30 pb-32">
       <PageHeader title="Pelacakan Shuttle" subtitle={schedule.plate} />
 
       <div className="p-4">
+        {/* Live armada status chip */}
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-3 flex items-center justify-between rounded-2xl bg-card p-3 shadow-soft"
+        >
+          <div className="flex items-center gap-2">
+            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${meta.dot}`}>
+              <span className={`absolute inset-0 rounded-full ${meta.dot} opacity-60 animate-ping`} />
+            </span>
+            <div>
+              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                Status Armada
+              </div>
+              <div className="text-sm font-bold">{meta.label}</div>
+            </div>
+          </div>
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${meta.tone}`}>
+            LIVE
+          </span>
+        </motion.div>
+
         <MapView
           center={[(pickup.lat + KNO_AIRPORT.lat) / 2, (pickup.lng + KNO_AIRPORT.lng) / 2]}
           zoom={11}
@@ -239,12 +273,12 @@ function TrackingPage() {
             </div>
           </div>
 
-          {/* Timeline */}
+          {/* Timeline — status armada */}
           <div className="mt-4 space-y-3">
-            <Step label="Driver dijadwalkan" done active={phase === "scheduled"} />
             <Step label="Menuju titik jemput" done={progress >= 0.01} active={phase === "to_pickup"} />
             <Step label={`Tiba di ${pickup.name}`} done={progress >= P_PICKUP} active={phase === "boarding"} />
-            <Step label={`Tiba di ${KNO_AIRPORT.code}`} done={progress >= 1} active={phase === "arrived"} />
+            <Step label="Berangkat menuju KNO" done={progress >= P_BOARD_END} active={phase === "to_airport"} />
+            <Step label={`Tiba di Bandara ${KNO_AIRPORT.code}`} done={progress >= 1} active={phase === "arrived"} />
           </div>
         </motion.div>
 
