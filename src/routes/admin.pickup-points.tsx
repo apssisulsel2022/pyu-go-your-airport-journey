@@ -12,7 +12,7 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_admin/pickup-points")({
+export const Route = createFileRoute("/admin/pickup-points")({
   component: PickupPointsPage,
 });
 

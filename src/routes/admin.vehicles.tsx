@@ -13,7 +13,7 @@ import { SeatLayoutGrid } from "@/components/admin/SeatLayoutGrid";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_admin/vehicles")({
+export const Route = createFileRoute("/admin/vehicles")({
   component: VehiclesPage,
 });
 

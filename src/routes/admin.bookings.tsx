@@ -13,7 +13,7 @@ import { SeatLayoutGrid } from "@/components/admin/SeatLayoutGrid";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 
-export const Route = createFileRoute("/_admin/bookings")({
+export const Route = createFileRoute("/admin/bookings")({
   component: BookingsPage,
 });
 

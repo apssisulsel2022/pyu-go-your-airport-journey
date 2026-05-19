@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 
-export const Route = createFileRoute("/_admin")({
+export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin — PYU-GO" }] }),
   component: AdminLayout,
 });

@@ -6,7 +6,7 @@ import { Calendar, Ticket, TrendingUp, Users } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export const Route = createFileRoute("/_admin/")({
+export const Route = createFileRoute("/admin/")({
   component: Dashboard,
 });
 
