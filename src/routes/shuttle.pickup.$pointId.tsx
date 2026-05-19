@@ -156,9 +156,9 @@ function PickupRoutePreview() {
         <div className="grid grid-cols-2 gap-2">
           <Metric
             icon={<Ruler className="h-3.5 w-3.5" />}
-            label="Jarak titik"
-            value={`${point.distanceKm} km`}
-            sub="dari pusat kota"
+            label="Jarak ke KNO"
+            value={`${distanceKm} km`}
+            sub={osrm ? "via jalan" : osrmLoading ? "menghitung…" : "estimasi"}
           />
           <Metric
             icon={<Clock className="h-3.5 w-3.5" />}
