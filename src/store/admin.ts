@@ -294,7 +294,7 @@ export const useAdmin = create<AdminState>()(
       resetAll: () => set(buildSeed()),
     }),
     {
-      name: "pyu-admin-v1",
+      name: "pyu-admin-v2",
     },
   ),
 );
