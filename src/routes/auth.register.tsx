@@ -1,7 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { User, Mail, Phone, Lock } from "lucide-react";
+import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Daftar — PYU-GO" }] }),
@@ -10,6 +13,32 @@ export const Route = createFileRoute("/auth/register")({
 
 function RegisterPage() {
   const nav = useNavigate();
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: window.location.origin,
+        data: { full_name: fullName, phone },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Akun dibuat! Silakan masuk.");
+    nav({ to: "/" });
+  };
+
   return (
     <div className="min-h-screen bg-hero-gradient">
       <div className="px-6 pt-10 text-primary-foreground">
@@ -19,22 +48,21 @@ function RegisterPage() {
       </div>
 
       <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mt-8 rounded-t-3xl bg-card p-6 shadow-float">
-        <form onSubmit={(e) => { e.preventDefault(); nav({ to: "/auth/otp" }); }} className="space-y-3">
-          <Field icon={<User className="h-4 w-4" />} placeholder="Nama lengkap" />
-          <Field icon={<Mail className="h-4 w-4" />} placeholder="Email" type="email" />
-          <Field icon={<Phone className="h-4 w-4" />} placeholder="Nomor HP" type="tel" />
-          <Field icon={<Lock className="h-4 w-4" />} placeholder="Kata sandi" type="password" />
+        <form onSubmit={submit} className="space-y-3">
+          <Field icon={<User className="h-4 w-4" />} placeholder="Nama lengkap" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+          <Field icon={<Mail className="h-4 w-4" />} placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field icon={<Phone className="h-4 w-4" />} placeholder="Nomor HP" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Field icon={<Lock className="h-4 w-4" />} placeholder="Kata sandi (min 6)" type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} />
           <label className="flex items-start gap-2 text-xs text-muted-foreground">
             <input type="checkbox" required className="mt-0.5 accent-primary" />
             Saya menyetujui Syarat & Ketentuan dan Kebijakan Privasi PYU-GO.
           </label>
-          <button className="w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-card">
-            Daftar
+          <button disabled={loading} className="w-full rounded-full bg-primary py-3.5 text-sm font-bold text-primary-foreground shadow-card disabled:opacity-60">
+            {loading ? "Memproses..." : "Daftar"}
           </button>
         </form>
         <div className="mt-5 text-center text-sm text-muted-foreground">
-          Sudah punya akun?{" "}
-          <Link to="/auth/login" className="font-bold text-primary">Masuk</Link>
+          Sudah punya akun? <Link to="/auth/login" className="font-bold text-primary">Masuk</Link>
         </div>
       </motion.div>
     </div>
