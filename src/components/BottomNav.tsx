@@ -1,11 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Ticket, Map, User } from "lucide-react";
+import { Home, Ticket, User } from "lucide-react";
 import { motion } from "framer-motion";
 
 const items = [
   { to: "/", label: "Beranda", icon: Home },
   { to: "/bookings", label: "Tiket", icon: Ticket },
-  { to: "/ride", label: "Ride", icon: Map },
   { to: "/account", label: "Akun", icon: User },
 ];
 
@@ -13,7 +12,7 @@ export function BottomNav() {
   const loc = useLocation();
   return (
     <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-border bg-card/95 backdrop-blur-lg shadow-float">
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-3">
         {items.map((it) => {
           const active = loc.pathname === it.to;
           const Icon = it.icon;
