@@ -1,111 +1,88 @@
-# Phase 2 — Integrasi Backend Lovable Cloud (Auth, DB, Realtime, RLS)
+# MVP — Integrasi Penuh ke Lovable Cloud
 
-Aktifkan Lovable Cloud, bangun skema lengkap, ganti seluruh state lokal/mock & login admin lama dengan auth + database asli, lalu hidupkan realtime untuk kursi, lokasi driver, dan status pesanan.
+Database & auth sudah siap. Sekarang kita potong scope ke alur inti yang benar-benar jalan end-to-end, ganti semua mock/localStorage dengan data DB, dan kunci halaman dengan auth nyata.
 
-## Langkah Eksekusi
+## Scope MVP (yang masuk)
 
-### 1. Enable Lovable Cloud
+1. **Auth nyata** — email/password + Google. Hapus admin login lama. Semua halaman privat di-gate.
+2. **Booking shuttle end-to-end** — pilih pickup → jadwal → kursi (realtime) → penumpang → bayar (mock) → e-tiket.
+3. **Daftar pesanan saya** — `bookings.tsx` baca dari DB.
+4. **Tracking shuttle** — polyline OSRM (sudah ada) + posisi driver realtime jika tersedia.
+5. **Admin minimal** — login admin (role-gated), kelola Pickup Points, Vehicles, Schedules, lihat Bookings.
+6. **Seed data** — 1 rute Medan→KNO, 4–6 pickup points, 2 vehicle, jadwal hari ini & besok, 1 akun admin.
 
-- Aktifkan Cloud (Postgres + Auth + Storage + Realtime).
-- Setelah aktif, semua koneksi pakai client bawaan `@/integrations/supabase/*` (browser, auth-middleware, admin).
+## Yang DIBUANG/ditunda dari MVP
 
-### 2. Skema Database (migration)
+- Modul **Ride hailing** (`ride.tsx`, `ride.tracking.tsx`) — sembunyikan dari menu, route tetap tapi tampilkan "Coming soon". Tabel `ride_orders` & `driver_locations` tetap ada, belum dipakai UI.
+- Halaman OTP (`auth.otp.tsx`) — tidak dipakai (auto-confirm aktif). Redirect ke login.
+- Admin Operations (`admin.operations.tsx`) — sembunyikan, halaman placeholder.
+- Promo code, kelas multi-tier kompleks, refund — keluar dari MVP.
 
-Buat tabel berikut + enum + trigger:
+## Arsitektur Eksekusi
 
-```text
-app_role (enum: admin | driver | customer)
-vehicle_type (enum: hiace | suv| minicar)
-booking_status (enum: pending | paid | boarded | completed | cancelled)
-ride_status (enum: requested | accepted | ongoing | completed | cancelled)
-payment_status (enum: pending | success | failed | refunded)
-seat_status (enum: available | held | booked)
+### Server Functions (`src/lib/*.functions.ts`)
 
-profiles            (id pk -> auth.users, full_name, phone, avatar_url, created_at)
-user_roles          (id, user_id, role app_role, unique(user_id, role))
-drivers             (id pk -> auth.users, license_no, rating, status, vehicle_id)
-vehicles            (id, plate, name, type vehicle_type, capacity, seat_layout jsonb)
-routes              (id, origin, destination, distance_km)
-pickup_points       (id, route_id, name, address, lat, lng, area)
-schedules           (id, route_id, vehicle_id, pickup_point_id, departure_at, price, class, seats_total)
-seats               (id, schedule_id, seat_no, status seat_status)  -- realtime
-bookings            (id, code, user_id, schedule_id, status booking_status, total, created_at)
-seat_bookings       (id, booking_id, seat_id, passenger_name)
-payments            (id, booking_id, method, amount, status payment_status, paid_at)
-transactions        (id, payment_id, ref, payload jsonb, created_at)
-ride_orders         (id, user_id, driver_id, pickup jsonb, dropoff jsonb, fare, status ride_status, created_at)  -- realtime
-driver_locations    (driver_id pk, lat, lng, heading, updated_at)  -- realtime
-```
+- `shuttle.functions.ts`: `listPickupPoints`, `listSchedules({pickupPointId, date})`, `getScheduleSeats(scheduleId)`.
+- `bookings.functions.ts`: `createBooking({scheduleId, seatIds, passengers})`, `listMyBookings`, `getBooking(id)`, `cancelBooking(id)`.
+- `payments.functions.ts`: `mockPayBooking(bookingId)` — sleep 800ms, 90% sukses → insert `payments`+`transactions`, update `bookings.status='paid'`, `seats.status='booked'`.
+- `admin.functions.ts` (pakai `requireSupabaseAuth` + cek `has_role(admin)`): CRUD pickup_points, vehicles, schedules; list bookings.
 
-Trigger: `handle_new_user()` auto-insert ke `profiles` + role `customer` saat signup.
+Semua pakai `requireSupabaseAuth`. Pastikan `attachSupabaseAuth` terpasang di `src/start.ts`.
 
-Security definer function: `public.has_role(_uid uuid, _role app_role) returns boolean`.
+### Realtime hook
 
-### 3. RLS Policies (ringkas)
+- `useSeatAvailability(scheduleId)` — subscribe channel `seats` filter schedule_id, refetch saat berubah.
 
-- `profiles`: user baca/ubah miliknya; admin via `has_role`.
-- `user_roles`: hanya admin yang mengubah; user baca milik sendiri.
-- `bookings`, `seat_bookings`, `payments`, `transactions`: customer hanya yang miliknya; admin semua.
-- `ride_orders`: customer (user_id) & driver (driver_id) yang terlibat; admin semua.
-- `driver_locations`: driver update miliknya; semua authenticated boleh select (untuk tracking).
-- `seats`: select untuk authenticated; update hanya via server fn.
-- Tabel master (`routes`, `pickup_points`, `vehicles`, `schedules`): select untuk semua authenticated; tulis admin.
+### Routing & gate
 
-### 4. Auth Asli (hapus admin lama)
+- Tambah `src/routes/_authenticated.tsx` (`beforeLoad` → cek session, redirect `/auth/login`). Pindahkan semua halaman privat (shuttle.*, bookings, account) ke prefix `_authenticated`.
+- Tambah `src/routes/_authenticated/_admin.tsx` — server fn `requireAdmin` cek role; admin.* dipindahkan ke sini.
+- `__root.tsx`: pasang listener `onAuthStateChange` (invalidate router + react-query) — satu kali.
 
-- Hapus mock login admin (route/komponen lama yang pakai password hardcode/localStorage).
-- `/auth/login` & `/auth/register`: Supabase email/password.
-- Google sign-in via Lovable broker (`lovable.auth.signInWithOAuth("google")`) + panggil `configure_social_auth(["google"])`.
-- Hook `useAuth` dengan `onAuthStateChange` di `__root.tsx` (invalidate router + react-query).
-- Layout `_authenticated.tsx` (gate via `beforeLoad`) untuk halaman privat.
-- Layout `_authenticated/_admin.tsx` cek `has_role(auth.uid, 'admin')` via server fn.
+### UI migration (ganti mock-data.ts & zustand booking)
 
-### 5. Server Functions (createServerFn)
+| Halaman | Sumber data baru |
+|---|---|
+| `shuttle.pickup.tsx` & `$pointId` | `listPickupPoints` |
+| `shuttle.service.tsx` | tetap (pilihan layanan) |
+| `shuttle.schedule.tsx` | `listSchedules` |
+| `shuttle.seats.tsx` | `getScheduleSeats` + `useSeatAvailability` |
+| `shuttle.passenger.tsx` | form lokal, draft di zustand |
+| `shuttle.payment.tsx` | `createBooking` → `mockPayBooking` |
+| `shuttle.ticket.tsx` | `getBooking(id)` |
+| `shuttle.tracking.tsx` | OSRM polyline (sudah) + DB schedule |
+| `bookings.tsx` | `listMyBookings` |
+| `account.tsx` | `profiles` (baca/update) |
+| `admin.pickup-points/vehicles/schedules/bookings` | admin server fn |
 
-Letakkan di `src/lib/*.functions.ts` (admin client di `*.server.ts`):
+Zustand `useBooking` dipertahankan sebagai **draft wizard** saja (pre-submit). Setelah `createBooking` sukses, sumber kebenaran = DB.
 
-- `listSchedules`, `getScheduleSeats`
-- `createBooking` (hold seat, insert booking + seat_bookings)
-- `mockPayBooking` (simulasi sukses/gagal → tulis payments + transactions, set booking `paid`, seats `booked`)
-- `listMyBookings`, `cancelBooking`
-- `requestRide`, `acceptRide` (driver), `updateRideStatus`
-- `upsertDriverLocation`
-- Admin: `adminListBookings`, `adminCreateSchedule`, `adminCrudVehicle`, `adminCrudPickupPoint`.
+### Seed
 
-Semua server fn pakai `requireSupabaseAuth`; untuk admin tambah cek `has_role`.
+Migration kecil yang insert: 1 route, 4 pickup_points (Medan), 2 vehicles (Hiace 12 seat, Elf 15 seat), 4 schedules (hari ini & besok). Akun admin di-promote manual via tool insert setelah user signup (atau seed satu user via dashboard).
 
-### 6. Realtime Hooks
+## File yang Disentuh
 
-`src/hooks/`:
+**Baru**
+- `src/routes/_authenticated.tsx`, `src/routes/_authenticated/_admin.tsx`
+- `src/lib/shuttle.functions.ts`, `bookings.functions.ts`, `payments.functions.ts`, `admin.functions.ts`
+- `src/hooks/use-seat-availability.ts`, `src/hooks/use-auth.ts`
 
-- `useSeatAvailability(scheduleId)` — subscribe `seats` filter schedule.
-- `useDriverLocation(driverId)` — subscribe `driver_locations`.
-- `useRideStatus(rideId)` / `useBookingStatus(bookingId)`.
+**Edit**
+- `src/routes/__root.tsx` (auth listener)
+- Semua `shuttle.*`, `bookings.tsx`, `account.tsx`, `admin.*`
+- `src/routes/auth.login.tsx`, `auth.register.tsx` (Supabase + Google broker)
+- `src/store/booking.ts` (ramping, draft saja)
+- `src/start.ts` (verify `attachSupabaseAuth`)
 
-### 7. Migrasi UI (ganti mock & localStorage)
+**Hapus / nonaktifkan**
+- Mock admin login lama (di `admin.tsx`)
+- `src/lib/mock-data.ts` (dihapus setelah migrasi selesai)
+- `src/store/admin.ts` (digantikan server fn)
+- `ride.*` disembunyikan dari nav (file tetap)
 
-- `shuttle.pickup` → query `pickup_points`/`routes`.
-- `shuttle.schedule` → `schedules` (filter tanggal & rute).
-- `shuttle.seats` → `useSeatAvailability` + `createBooking`.
-- `shuttle.payment` → `mockPayBooking`.
-- `shuttle.ticket`, `bookings` → `listMyBookings` (live status).
-- `shuttle.tracking` → `useDriverLocation` (OSRM tetap untuk polyline).
-- `ride` → `requestRide` + realtime status.
-- `account` → `profiles`.
-- `admin.*` → query asli, dilindungi role admin.
-- Store `useBooking` (zustand) dipakai hanya untuk draft wizard pre-submit; setelah `createBooking` data ikut DB.
+## Catatan
 
-### 8. Seed Data
-
-Insert data awal: 1 route (Medan → KNO), beberapa pickup_points (sudah ada di mock), 2 vehicle, beberapa schedule untuk hari ini & besok, 1 akun admin demo (via SQL update `user_roles`).
-
-## Catatan Teknis
-
-- gunakan Supabase Edge Functions; 
-- OSRM routing.
-
-## File yang Akan Disentuh (ringkas)
-
-- BARU: migration SQL, `src/lib/{bookings,rides,admin,payments}.functions.ts`, `src/lib/*.server.ts`, hooks realtime, `src/routes/_authenticated.tsx`, `src/routes/_authenticated/_admin.tsx`.
-- EDIT: `src/routes/__root.tsx`, semua `shuttle.*`, `ride.*`, `admin.*`, `auth.login.tsx`, `auth.register.tsx`, `account.tsx`, `bookings.tsx`, `src/store/booking.ts`, `src/store/admin.ts`.
-- &nbsp;
+- Google OAuth: panggil `configure_social_auth(["google"])` saat memasang tombol.
+- Routing TanStack: hindari trailing slash; route privat butuh `_authenticated` agar SSR tidak 401.
+- File `src/integrations/supabase/*` tidak disentuh.
