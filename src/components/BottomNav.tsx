@@ -12,7 +12,7 @@ export function BottomNav() {
   const loc = useLocation();
   return (
     <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 border-t border-border bg-card/95 backdrop-blur-lg shadow-float">
-      <ul className="grid grid-cols-4">
+      <ul className="grid grid-cols-3">
         {items.map((it) => {
           const active = loc.pathname === it.to;
           const Icon = it.icon;
