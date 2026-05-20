@@ -5,15 +5,17 @@ Aktifkan Lovable Cloud, bangun skema lengkap, ganti seluruh state lokal/mock & l
 ## Langkah Eksekusi
 
 ### 1. Enable Lovable Cloud
+
 - Aktifkan Cloud (Postgres + Auth + Storage + Realtime).
 - Setelah aktif, semua koneksi pakai client bawaan `@/integrations/supabase/*` (browser, auth-middleware, admin).
 
 ### 2. Skema Database (migration)
+
 Buat tabel berikut + enum + trigger:
 
 ```text
 app_role (enum: admin | driver | customer)
-vehicle_type (enum: hiace | elf | minibus)
+vehicle_type (enum: hiace | suv| minicar)
 booking_status (enum: pending | paid | boarded | completed | cancelled)
 ride_status (enum: requested | accepted | ongoing | completed | cancelled)
 payment_status (enum: pending | success | failed | refunded)
@@ -40,6 +42,7 @@ Trigger: `handle_new_user()` auto-insert ke `profiles` + role `customer` saat si
 Security definer function: `public.has_role(_uid uuid, _role app_role) returns boolean`.
 
 ### 3. RLS Policies (ringkas)
+
 - `profiles`: user baca/ubah miliknya; admin via `has_role`.
 - `user_roles`: hanya admin yang mengubah; user baca milik sendiri.
 - `bookings`, `seat_bookings`, `payments`, `transactions`: customer hanya yang miliknya; admin semua.
@@ -49,6 +52,7 @@ Security definer function: `public.has_role(_uid uuid, _role app_role) returns b
 - Tabel master (`routes`, `pickup_points`, `vehicles`, `schedules`): select untuk semua authenticated; tulis admin.
 
 ### 4. Auth Asli (hapus admin lama)
+
 - Hapus mock login admin (route/komponen lama yang pakai password hardcode/localStorage).
 - `/auth/login` & `/auth/register`: Supabase email/password.
 - Google sign-in via Lovable broker (`lovable.auth.signInWithOAuth("google")`) + panggil `configure_social_auth(["google"])`.
@@ -57,7 +61,9 @@ Security definer function: `public.has_role(_uid uuid, _role app_role) returns b
 - Layout `_authenticated/_admin.tsx` cek `has_role(auth.uid, 'admin')` via server fn.
 
 ### 5. Server Functions (createServerFn)
+
 Letakkan di `src/lib/*.functions.ts` (admin client di `*.server.ts`):
+
 - `listSchedules`, `getScheduleSeats`
 - `createBooking` (hold seat, insert booking + seat_bookings)
 - `mockPayBooking` (simulasi sukses/gagal → tulis payments + transactions, set booking `paid`, seats `booked`)
@@ -69,12 +75,15 @@ Letakkan di `src/lib/*.functions.ts` (admin client di `*.server.ts`):
 Semua server fn pakai `requireSupabaseAuth`; untuk admin tambah cek `has_role`.
 
 ### 6. Realtime Hooks
+
 `src/hooks/`:
+
 - `useSeatAvailability(scheduleId)` — subscribe `seats` filter schedule.
 - `useDriverLocation(driverId)` — subscribe `driver_locations`.
 - `useRideStatus(rideId)` / `useBookingStatus(bookingId)`.
 
 ### 7. Migrasi UI (ganti mock & localStorage)
+
 - `shuttle.pickup` → query `pickup_points`/`routes`.
 - `shuttle.schedule` → `schedules` (filter tanggal & rute).
 - `shuttle.seats` → `useSeatAvailability` + `createBooking`.
@@ -87,15 +96,16 @@ Semua server fn pakai `requireSupabaseAuth`; untuk admin tambah cek `has_role`.
 - Store `useBooking` (zustand) dipakai hanya untuk draft wizard pre-submit; setelah `createBooking` data ikut DB.
 
 ### 8. Seed Data
+
 Insert data awal: 1 route (Medan → KNO), beberapa pickup_points (sudah ada di mock), 2 vehicle, beberapa schedule untuk hari ini & besok, 1 akun admin demo (via SQL update `user_roles`).
 
 ## Catatan Teknis
-- Tidak pakai Supabase Edge Functions; semua logic via `createServerFn`.
-- Mock payment: server fn yang sleep 800ms lalu 90% sukses.
-- OSRM routing tetap dari client (tidak terkait DB).
-- Tidak menambah dependency baru.
+
+- gunakan Supabase Edge Functions; 
+- OSRM routing.
 
 ## File yang Akan Disentuh (ringkas)
+
 - BARU: migration SQL, `src/lib/{bookings,rides,admin,payments}.functions.ts`, `src/lib/*.server.ts`, hooks realtime, `src/routes/_authenticated.tsx`, `src/routes/_authenticated/_admin.tsx`.
 - EDIT: `src/routes/__root.tsx`, semua `shuttle.*`, `ride.*`, `admin.*`, `auth.login.tsx`, `auth.register.tsx`, `account.tsx`, `bookings.tsx`, `src/store/booking.ts`, `src/store/admin.ts`.
-- HAPUS: mock login admin lama (password hardcode / bypass localStorage).
+- &nbsp;
