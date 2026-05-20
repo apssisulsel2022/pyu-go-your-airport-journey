@@ -1,11 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, Ticket, Map, User } from "lucide-react";
+import { Home, Ticket, User } from "lucide-react";
 import { motion } from "framer-motion";
 
 const items = [
   { to: "/", label: "Beranda", icon: Home },
   { to: "/bookings", label: "Tiket", icon: Ticket },
-  { to: "/ride", label: "Ride", icon: Map },
   { to: "/account", label: "Akun", icon: User },
 ];
 
